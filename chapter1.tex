@@ -1,0 +1,998 @@
+Legacy Code Made Easy
+
+Some definitions
+- seam
+- pinch point
+- etc.
+
+good code
+- no side effects
+- small classes
+- interfaces
+- small/no classes
+- simple constructors
+
+Foreword
+
+This book is based on Michael Feathers book "Working Effectively with Legacy Code" (WELC). It covers a very important topic: how to deal with old, badly structured, untested code. In short, legacy code. Legacy code is a very common problem. Even if you try to write good code to begin with, code tends to rot and becomes legacy code over time. This code is worth trillions and countless teams of software engineers have only one task: to keep this code alive at all costs.
+
+Many of the techniques explained in the afore mentioned book are still useful, but there are certainly some aspects that could be written differently nowadays. A common example is dependency injection (DI), which is now a very common technique to handle complexity. Feathers calls this "parametrize constructor" and in my opinion he doesn't give this technique enough credit. Furthermore, Feathers praises the advantages of object-oriented (OO) code, which in my opinion is somewhat misguided. As I explained in my book "Software Engineering Made Easy", procedural code can do anything that OO code can do as well, and in most cases it's even simpler.
+
+Another issue is that the book focuses too much on C++ and its particularities like preprocessor macros and linking of custom files. Now this is certainly a book about working with old code and such techniques therefore can be useful, but they shouldn't be first class citizens. Such techniques are desperate measures for special issues and should only be used when absolutely needed.
+
+It also has to be said that WELC nor this book contain solutions for all different kinds of problems. For some specific issues we can give you blueprints on how to solve them, but the main task still lies with the programmer, you.  
+
+As a summary, one can say that WELC stood the test of time, but it deserves a complete overhaul. I hope that this overhaul will be read for another twenty years as well.
+
+Marco Gähler
+
+\chapter{Working with Legacy Code}
+
+Don't we all dream of our perfect software project? With a clear architecture and tidy code? Unfortunately in most cases, this is not the reality. Most of us work on old legacy code with little to no apparent structure and certainly no unit tests. This is the reality of software development. The code out there works and is worth trillions. It is not going to be rewritten anytime soon.
+
+Now let's imagine what happens if you suggest to rewrite the code and you miraculously get the approval of your CEO. You may start from scratch. You may do everything right this time. But the first problem is, that your customers still expect some new features. So you can't use the entire software team to write the new code. Instead you can only use a fraction of the team to do the rewrite. Robert C. Martin called this the "Tiger Team"\footnote{Clean Code, Robert C. Martin}. Furthermore, the new software needs to have at least as many features as the old one. Otherwise the customers will refuse to use it. So the Tiger Team has to keep up with the legacy code team in addition to writing the new code. The Tiger Team hast to catch up with the legacy code team which in turn makes progress as well.
+
+Now chances are, that the Tiger Team will never catch up. The once perfect plan didn't work out and the code turned out to be just as bad as the old one. Furthermore, the whole process of rewriting the code may already last several years and the original Tiger Team has long dissolved by now. There are new members in the Tiger Team and they don't know any better how to structure the code than the legacy code team. At some point the CEO will pull the plug and the project of the Tiger Team will be abandoned, while the legacy code still exists.
+
+Of course, this is a very pessimistic scenario. In most cases, at least some parts of the new code can be incorporated into the old code. But a complete rewrite carries an existential risk. It has to be well planed and the risk has to be estimated correctly. In most cases, it makes sense to break the existing code into pieces and rewrite them one by one. This is the topic of this book.
+
+\chapter{Testing}
+
+As we'll see many times throughout this book, having good test coverage with unit tests is paramount. The unit tests serve as a safety net when you perform changes to the code. Unit tests immediately give you feedback whether the code still works as expected. As long as the code you're working with is covered with tests, you can be fairly sure that you didn't break anything. Unit tests are no guarantee that everything still works, but they are by far the best safety net you can have.
+
+Ultimately, unit tests are also just code. And as with normal code, there are some best practices that you should follow. When in doubt, follow the normal best practices for writing good code. Though there are some differences:
+\begin{itemize}
+    \item Unit tests have to be really easy to understand. If you don't manage to make them really easy to understand, your code has some real issues.
+    \item Unit tests test objects only with their external interfaces. You should never test internal methods of an object. If you have to do so, your object is too complex and you should split it into smaller objects.
+    \item Write normal code. No preprocessor macros, no global variables, no black magic. Normal code is the best code.
+    \item If a test fails, you shoud know immediately what the problem is. If required, you can have a test name which is a complete sentence. You won't use this name anywhere else, so it doesn't matter that it's so long.
+    \item Tests should be as independent of each other as possible. If some code breaks, only the corresponding test should fail. With unit tests, this is generally not a big deal, but once you write integration tests, you really have to make sure that each test is responsible for only one thing.
+\end{itemize}
+
+
+\chapter{Problems of Code}
+
+The goal of this book is quite simple: explain to you how to make your existing code better. This requires two steps: you have to find out why your code is bad, and you need to have an idea how the code could look like instead. There are dedicated books on this topic and I highly recommend you'd read my book "Software Engineering Made Easy"\footnote{Software Engineering Make Easy, Marco Gähler} before you read this book. I will always give some explanations on the code examples here, on why they are bad and how it could be improved, but you should be able to judge these things by yourself. I'm only giving you a very short overview on the most important points.
+
+Here is a list with some signs of bad code. This list is by no means exhaustive, but I think it covers the most common issues.
+
+\begin{itemize}
+    \item Classes and functions are too long.
+    \item There are too many levels of indentation.
+    \item There are no unit tests.
+    \item Use of comments instead of good names for variables and functions.
+    \item There are no interfaces.
+    \item There are global variables.
+    \item Functions have too many arguments.
+    \item Variables are redefined.
+    \item Implementation inheritance is used.
+\end{itemize}
+
+\section{Classes and Functions are Too Long}
+
+Classes and functions which are too long share the same problems. They tend to grow over time and start becoming one big unreadable pile of code. I'm not even going to show you an example as it would be a waste of paper. You quite certainly know by now that a function of more than 20 lines of code is generally extremely hard to comprehend. Of course, there are huge differences between functions. Some are 5 lines long and cannot be understood while others are 20 lines long and you still feel perfectly fine. But I hope you get the memo: long functions are pretty hard to understand and should therefore be avoided. The very same argumentation also holds for classes.
+
+There are several indicator whether a function or a class is well written. The simplest and most universally applicable rule is whether you can write a unit test for it. This is a quite good rule of thumb. If you are not able to write a unit test, you don't understand the code well enough. A clear sign that it's too complex. It should be broken into pieces.
+
+Another good rule is the Single Responsibility Principle (SRP), which states that every object should do exactly one thing. 
+
+\section{Too Many Levels of Indentation}
+
+Nested code is a direct consequence of having complicated logic with many if statements or loops. Now I hope you already see the problem: code should never by complicated. So we have a direct proof that nested code is bad.
+
+As a rule of thumb, one can say that good code contains few if statements because good code is easy to understand. If statements on the other hand are a very common source of bugs because they are so easy to confuse. Instead of using if statements, one can use for example polymorphism or at times you can also restructure your code in order to get rid of if statements.
+
+\section{No Unit Tests}
+
+Usually, no unit tests is one criterion to rule them all. If you have good test coverage, you usually also have reasonably good code. As we have seen on p. ?, having unit tests means that you have good class design. This rule also holds for the other points in our list. If you have unit tests, you inevitably have also some interfaces that you used for writing the tests with. So one can say that having unit tests is a very strong indication that your code is fine.
+
+Now in theory, you could also write pristine code without having unit tests, but this is extremely difficult to achieve. The danger of writing way huge classes and otherwise convoluted code is just too big and unit tests are generally the only thing to keep your programming style within boundaries.
+
+\section{Comments}
+
+Code should be self documenting. The syntax explains to you exactly what the code does. Adding a comment explaining what a line of code does is an unnecessary redundancy. And as the code changes over time, chances are that the comment goes out of date. Long story short: never comment what a piece of code does. Comments are no remedy for bad code.
+
+However, comments can explain things that code cannot explain. Code cannot explain, why something is the way it is. In a comment you can add a ticket number and then everyone can look up and reason for himself, why the code has to look the way it does.
+
+\section{No Interfaces or Global Variables}
+
+The optimal case is a function whose output only depends on its function arguments. It has no internal state, it reads no file and it doesn't talk to the database. This is called a pure function and is the standard in functional programming. Pure functions are great. They are very easy to test as you know what they depend on. The output will always be the same and if you write a unit test for such a function, it will never fail. It has a well defined interface.
+
+Now the complete opposite are class methods or functions with global variables. These objects are extremely hard to comprehend because they depend on hidden states. Just think about it: do you prefer a function with 3 arguments, or a function with no arguments, but 3 global variables that it depends on? I hope you prefer the function with 3 arguments because it's explicit. You see immediately what the function depends on and it is therefore much simpler to write a test for it. This function has a well defined interface. Meanwhile the interface of the function using 3 global variables is very blurry. You don't really know what that function depends on and therefore it's extremely difficult to work with such a function.
+
+\section{Too Many Arguments}
+
+This problem is generally less severe than the other points discussed in this chapter. Still, you should keep the number of arguments used by a function or method at a minimum. Robert C. Martin is quite strict about this point and recommends to use at most 3 arguments. I completely agree with him that having at most 3 function arguments is optimal, however at times it takes too much effort to keep it that way. You frequently add functionality to a function later on, which comes along with a new function argument. Now, this is a sign that the function is not designed anymore properly, but on the other hand, you don't always have time to write pristine code.
+
+Having too many arguments in your functions is a sign that you haven't structured your data properly. Think about all the different tools a plumber uses. But he has them neatly sorted in his toolbox. You have to do the same: sort your variables.
+
+\section{Redefined Variables}
+
+In C++ you can write the following code:
+
+\begin{programcode}{}
+\begin{verbatim}
+int main()
+{
+    int x = 5;
+    for(int i = 0; i < 10; i++)
+    {
+        int x = 3;
+        std::cout << x << std::endl;
+    }
+    std::cout << x << std::endl;
+}
+\end{verbatim}
+\end{programcode}
+
+This is very bad as the code becomes fragile. And can break at too many locations. If you forget the \code{int} of the inner x, you don't create a new variable, but you change the value of the outer variable x. Or you can forget the inner x completely, but you won't get a compilation error. This is really bad.
+
+Furthermore, reusing variable names makes the code hard to understand. You'll have two different variables with the same name. You'll always mix up the two and make a lot of errors. This is a clear sign that the code is flawed.
+
+If you ever encounter code like this, fix it immediately. Change \textit{both}(!) variables to a different name. Like this you will immediately get feedback from the compiler if you forgot to change one of the variables.
+
+\section{Implementation Inheritance}
+
+There are two kinds of inheritance:
+\begin{itemize}
+    \item Interface inheritance
+    \item Implementation inheritance
+\end{itemize}
+
+Interface inheritance is great. The base class defines an interface and the derived class has to implement it. In some languages like C++, this is required to enable polymorhism. In other languages, like Python, this is an optional feature. Whether or when you should use interface inheritance in python is another story. But there is certainly nothing wrong with interface inheritance.
+
+Implementation inheritance is a completely different story. The only reasons to use implementation inheritance are lazynes and missing knowledge on how to write better code. There is the well known quote: "Favor composition over inheritance". This is a very good rule of thumb because there are too many things that can go woring with implementation inheritance. Let's make an example:
+
+\begin{programcode}{}
+\begin{verbatim}
+class Animal:
+    def eat(self):
+        print(f'Animal eats {self.food()}')
+
+    def food(self):
+        return "grass"
+
+class Dog(Animal):
+    def food(self):
+        return "meat"
+
+fido = Dog()
+fido.eat() # what does this print?
+\end{verbatim}
+\end{programcode}
+
+This code calls the function \code{eat()}, which in turn calls the function \code{food()}. Now you might expect that this code calls the base class function \code{food()}, but in the class \code{Dog}, this function is overriden. So instead, \code{fido.eat()} prints "Animal eats meat".
+
+Now you might argue that this is intended and if you pay attention, you wouldn't make anything wrong. But in fact, this is terrible. Already the fact that you \textit{can} make such mistakes is a clear sign that the code is seriously flawed. The fact that you are \textit{able} to make such mistakes means that the code is brittle and brittle code is bad by definition.
+
+\section{Summary}
+
+In this chapter we looked at some of the most prevalent signs of bad code and we saw that there is one rule to rule them all. Unit tests! Unit tests are a very good indicator whether your code is good. Unfortunately you are quite certainly working with code that doesn't have unit tests, otherwise you wouldn't be reading this book.
+
+What we'll learn throughout the rest of this book is how to improve your code and deal with the other indications of bad code. And as I already mentioned before, there won't be a panacea. Or as Winston Churchill said: "I have nothing to offer but blood, toil, tears and sweat."
+
+\chapter{Refactoring}
+
+Refactoring is the process to change the structure of the code without changing its functionality. Now this may sound like a very simple thing to do but I guess you have all tried it before and failed for various reasons. Refactoring involves two steps. First you need to have a vision how the code could look instead. Without this vision, starting a refactoring is fairly pointless. How else are you supposed to make the code better? However, this is still the easy part of refactoring. You can also play around and you might get an idea how the code could look like. The even harder part is that you are not allowed to change the functionality of the code. This can give you nightmares. It's just too difficult to change the code without altering its functionality.
+
+One thing that helps a lot in the refactoring process are unit tests. Unit tests are great at fixing the functionality of a piece of code. They are no guarantee that the code is always correct, but if you have a good test coverage of your code, you'll feel much safer to do refactoring. In fact, good test coverage is pretty much the only thing which will make you feel safer. For these reasons, it is generally advisable to write unit tests covering the code you are planning to change. The problem is, that writing unit tests is not always possible. Or you don't know what you are supposed to test. If the only interface available has a dozen variables you'll have a very hard time figuring out what they all do.
+
+Refactoring is very mean because you usually have to refactor bad code. But if the code is bad, refactoring it becomes increasingly difficult. As already mentioned, you'll struggle understanding what the code does or there are no useful interfaces around. Therefore, you won't be able to fix the behavior of the code using unit tests. This leads to the circle of doom of refactoring.
+
+\section{Scratch Refactoring}
+
+When refactoring, it is important to have a vision how the code could look like. One approach to this goal is scratch refactoring. Scratch refactoring has two rules: you don't care if the code ultimately works, and you discard the code once you're done. Now, you should still try to implement code that works. Scratch refactoring is worthless if the code created cannot work at all. Afterall, you are supposed to get an idea how it could look like and that should be as close to a working version of the code as possible.
+
+The great thing about scratch refactoring is that you can get a feel for the code without much effort. Where might the problems be? How should the fundamental data structure look like? How much effort may it be to do the refactoring? These is all crucial information that you like to have before starting a full-fledged refactoring where you first have to find interfaces, write tests, etc.
+
+\chapter{Components for Refactoring}
+
+Before we can get started with the actual contents of this book, we first have to introduces some terminology. Most of the terms were introduced by Michael Feathers.
+
+As we have already seen that by far the most difficult part of refactoring is writing unit tests. 
+
+\section{Vice}
+
+A vice is a clamping device to hold physical objects in order to process them mechanically. What we need in refactoring is the same thing for software. We need to get a hold on a certain piece of code that we want to edit.
+
+In software development, every piece of code has two interfaces of interest. One for the input and one for the output. Everything in between should be fixed by the vice. The code inside the vice should be as small as possible in order to reduce the complexity that the vice needs to hold. Generally this complexity is limited by the interfaces available where you can write tests for. But it could also be that you have to skip a few interfaces as you have to refactor them as well. Though this happens rarely. In good code, the code is structured well enough such that you generally only have to touch the code within one pair of interfaces, meanwhile in bad code the interfaces are so far apparat that the closest pair of interfaces is completely sufficient.
+
+\section{Enabling point}
+
+The enabling point is the input of the code under test. This can be a function call or the constructor of an object. It may also be required to perform several steps, akin to the setup of a unit test. In the enabling point, you can not only change the values of some operation. At times, you can also use dependency injection (DI) to polymorphically change the behavior of the entire code within the vice.
+
+\section{Sensing Point}
+
+The sensing point is at the output of the code in the vice. It is where you see the result of some operation. This can be used for the assertions of the unit tests that you are going to write.
+
+\section{Unit Tests}
+
+As already mentioned before, unit tests is an extremely important topic as it is the single most characteristics to determine whether a piece of code is well written or not. Unit tests have three properties:
+
+\begin{itemize}
+\item They give you a definite answer whether the code works
+\item They are fast
+\item They are easily understandable
+\end{itemize}
+
+Let me briefly elaborate on these points:
+
+First, unit tests never depend on any external factors like the file system or a network connection. These things could fail. Instead, you have to use for example dependency injection to hand over a fake or a mock. This may feel like cheating at first sight, but it is not. You don't want to test if the network is working, nor do you want to rely on a file that someone might have deleted. These things would only make the tests unreliable.
+
+Second, unit tests should only take a few milliseconds. You will be running hundreds if not thousands of unit tests all the time. And if this process takes more than a few seconds, it will be tedious. For this reason you should abstract everything away that is computationally expensive. This can generally be done using dependency injection (DI), along with faking and mocking.
+
+Third, unit tests have to be easily understandable. Setting up a unit test and checking its results should only take a few lines of code. If this becomes tedious, it is a clear indication that your code is flawed.
+
+As a rule of thumb, one can say that unit tests can only be written for good code. Of course, there might be exceptions, but those are very rare. Vice versa, if you manage to write unit tests to your code, your code is quite certainly well written.
+
+For these reasons, one can say that unit tests are probably the single most important factor of writing good code. Not only because they facilitate refactoring, but also because they force you to write good code.
+
+Now I assume that you already know how to write unit tests and what they are generally about. So I'll refrain from writing an introduction on unit tests here. 
+
+\section{Dependency Injection}\label{sec:dependency_injection}
+
+Dependency Injection (DI), by Michael Feathers referred to as "parametrizing constructor", is a very common and powerful technique to pass functionality down the call stack. DI is particularly important if you have some object that you can't write unit tests for. This can be either because executing some method of this object is slow or it might not be deterministic, like communicating over a network connection.
+
+Let's start with a small example. You have a file containing some numbers. You want to read this file and calculate the average of the numbers. The code could look like this:
+
+\begin{programcode}{}\label{prog:average_of_file}
+\begin{verbatim}
+def average_of_file(file):
+    with open(file, 'r') as f:
+        contents = f.read()
+    numbers = [int(x) for x in contents.split(',')]
+    return sum(numbers)/len(numbers)
+
+def test_read_file():
+    assert average_of_file('test.csv') == 3
+\end{verbatim} 
+\end{programcode}
+
+This code has two flaws. 
+
+The first one is that it is potentially comparing floating point numbers for equality. But we'll neglect this issue for the time being.
+
+The second flaw is that this isn't a unit test. It depends on the file system. This is bad because the file system is slow and it is not deterministic. The file might be deleted or the contents might change. This is why we have to use dependency injection. We have to pass the file contents to the function instead of reading it from the file system. Now the first step is that we have to take the code code appart. We split it into two functions, one function is responsible for calculating the average of the \code{numbers} and the other function is responsible for reading the file.
+
+\begin{programcode}{}
+\begin{verbatim}
+def average_of_file(contents):
+    numbers = [int(x) for x in contents.split(',')]
+    return sum(numbers)/len(numbers)
+
+def read_file():
+    with open(file, 'r') as f:
+        return f.read()
+
+def test_read_file():
+    assert average_of_file(read_file('test.csv')) == 3
+\end{verbatim}
+\end{programcode}
+
+Now we can easily write a test which does not depend on the actual file. All we have to do is replacing the \code{read\_file} function with a mock that returns some random values.
+
+\begin{programcode}{}
+\begin{verbatim}
+def average_of_file(contents):
+    numbers = [int(x) for x in contents.split(',')]
+    return sum(numbers)/len(numbers)
+
+def read_mock(_):
+    return '1,2,3,4,5'
+
+def test_read_file():
+    assert average_of_file(read_mock('test.csv')) == 3
+\end{verbatim}
+\end{programcode}
+
+This is the basic idea of DI. But it's not yet the complete implementation. The \code{read\_mock} function may be burried within the code and it may be difficult to replace it. This is why we have to use a more sophisticated technique. We have to pass the function as an argument to \code{average\_of\_file}. This code looks as follows:
+
+\begin{programcode}{}
+\begin{verbatim}
+def average_of_file(reader, file_name):
+    numbers = file_reader(file_name)
+    return sum(numbers)/len(numbers)
+
+def mock_reader(_):
+    return '1,2,3,4,5'
+
+def file_reader(file_name):
+    with open(file_name, 'r') as f:
+        return f.read()
+
+def test_read_file():
+    assert average_of_file(mock_reader, 'test.csv') == 3
+\end{verbatim}
+\end{programcode}
+
+We pass the code to read the file as a function argument to \code{average\_of\_file}. This is the basic idea of DI. You encapsulate the functionality into a function or a class and pass it on through the call stack. This way you can easily replace the functionality with a mock or a fake.
+
+Note that DI is not limited to object-oriented (OO) code. You can also use it in procedural code as shown in the example above. The only requirement is that the programming language supports passing functions as arguments, which pretty much all programming langages do. For this reason, I won't make any difference between OO and procedural code in this book. The fundamental techniques required to refactor the code are exactly the same. In fact, writing OO code has its own set of problems. You have to deal with inheritance and classes which are too long, which can make the code even more complicated. We'll spend a fair amount of this book on problems that are specific to OO code.
+
+Note that there are also mocking libraries avaiable to change the behavior of some functions being executed in your tests. Please don't use these libraries. They are a clear sign that your code is flawed. Use DI instead. It's really not that hard to pass a function as an argument to another function. Even if DI is currently not implemented in the code so far, adding it is usually not that hard.
+
+\section{Fakes and Mocks}
+
+As we have just seen, DI comes along with the usage of fakes and mocks. They both have in common that they replace functionality with some artificial result. The general idea behind fakes and mocks is that you want to replace some slow or unreliable functionality with a fast and deterministic object as it is required for unit tests.
+
+Fakes and mocks are very similar as they have both the same goal. They are tools to replace some hard to test functionality with some artificial result.
+
+Mocking is generally the easier thing to do. You just replace the object with a function that returns some predefined values as we have seen above. There's really not that much more left to explain.
+
+Faking on the other hand can be much more difficult. In faking you replace a hard to test object with some artificial object that imitates at least some parts of the original object. A common example is creating a fake database or a file system. You implement a piece of code supporting a \code{read} and \code{write} function. The \code{write} function doesn't actually write to the DB or the file system. Instead, is just stores the corresponding values in the memory. Vice versa, when calling the \code{read} function, it doesn't actually read from the DB or the file system, but it returns the values stored in the memory. Like this you can mimic the behavior of the DB or the file system and write unit tests for your code.
+
+\begin{programcode}{}
+\begin{verbatim}
+class FakeDB:
+    def __init__(self):
+        self.data = {}
+
+    def write(self, key, value):
+        self.data[key] = value
+
+    def read(self, key):
+        return self.data[key]
+\end{verbatim}
+\end{programcode}
+
+
+In general I recommend writing mocks because they are so much simpler than fakes. If you really need a full fledged fake, chances are that your code is flawed.
+
+\section{Tools}
+
+Michael Feathers had high hopes that there would be some refactoring tools being developed over the curse of the years. Unfortunately, this didn't happen. There are some tools available, but they are generally not very useful. The most common tool is the search and replace functionality of your IDE. This tool can rename variables, extract functions, etc. However, it is not possible to do more fundamental changes to your code with automated tools. One of the reasons are certainly misguided constructs like global variables, inheritance, etc. All the things which make the code so hard to refactor in the first place. You never know if there is a global variable nor how it might affect the functionality of the code. Probably writing a tool fails for the very same reason: it cannot guarantee that the code still works after the refactoring.
+
+One question is of course whether the AI tools will be able to do refactoring, though I guess this is still a long way to go. AI tools are simply not there yet and I don't know how an AI tool should be able to detect side effects of a function and learn how to deal with them.
+
+\chapter{Adding Functionality}
+
+There are many cases where you work with some sub-optimal code base. The classes and functions are too long, and, of course, there are no unit tests around. But you would still like to add some functionality to the code without disrupting it too much. Now the question is: how do you do that?
+
+The answer is: onion layer code. You take the existing code and add a wrapper around it. This doesn't work for any kind of code, but there are times when you have to do something that you can do at the beginning or the end of the function. A very simple example is the \code{\@timeit} decorator in Python which measures the time required to execute a function.
+
+\begin{programcode}{}
+\begin{verbatim}
+import time
+
+def timeit(func):
+    def wrapper(*args, **kwargs):
+        start = time.time()
+        result = func(*args, **kwargs)
+        print(f'''{func.__name__} took 
+                  {time.time()-start} seconds''')
+        return result
+    return wrapper
+    
+@timeit
+def add(a, b):
+    return a+b
+
+add(1, 2) # prints "add took 0.0 seconds"
+\end{verbatim}
+\end{programcode}
+
+Now this code here is quite Python specific. But you can also write "normal" wrappers in any other programming language.
+
+Let's assume you have the following code:
+
+\begin{programcode}{}
+\begin{verbatim}
+def add_one(items):
+    return [x+1 for x in items]
+\end{verbatim}
+\end{programcode}
+
+Now you want to return only +1 for elements that are smaller than 5. You could write the following code:
+
+\begin{programcode}{}
+\begin{verbatim}
+def add_one(items):
+    return [x+1 for x in items if x < 5]
+\end{verbatim}
+\end{programcode}
+
+But this is not what we want. We want to add the functionality without changing the existing code. Instead we want to add an onion layer around the existing code. What we can do, is filtering the list in a separate function and call it before calling the \code{add\_one} function. This code looks as follows:
+
+\begin{programcode}{}
+\begin{verbatim}
+def add_one_inner(items):
+    return [x+1 for x in items]
+
+def filter_items(items):
+    return [x for x in items if x < 5]
+
+def add_one(items):
+    items = filter_items(items)
+    return add_one_inner(items)
+\end{verbatim}
+\end{programcode}
+
+This process consists of three fairly simple steps:
+\begin{enumerate}
+    \item Rename the existing function. This is actually the hardest part if you want to find a good name.
+    \item Write the new function, along with some unit tests, etc.
+    \item Call the renamed function (\code{add\_one\_inner}) and the new function \newline(\code{filter\_items}) from the function with the old name (\code{add\_one}).
+\end{enumerate}
+
+\chapter{Dependencies}
+
+\section{About Dependencies}
+
+A very common issue in software development is that you are working with a Big Ball of Mud. Everything depends on everything else and you don't know where to start entangeling this mess. This is when you have to start breaking depenedencies. If you didn't already try to do so earlier on.
+
+The goal of breaking dependecies is having loosly coupled and highly coherent code. This means that you should have small groups of objects with strong coupling within the group and weak coupling between the groups. This is in stark contrast to the single blob of code you probably had before where everything depends on everything else.
+
+Having loosly coupled code is crucial because it simplifies the creation of objects and altering some piece of code doesn't cause ripple effects. One common way to represent objects and coupling is by using a graph where the objects are the nodes and the dependencies are the edges. In a well structured code base, the graph is a tree. In a Big Ball of Mud, the graph is a single blob.
+
+
+\begin{figure}[h]
+    \centering
+    \begin{tikzpicture}[scale=1.5, transform shape]
+        \node[draw, circle] (A) at (0,0) {A};
+        \node[draw, circle] (B) at (1,1) {B};
+        \node[draw, circle] (C) at (2,0) {C};
+        \node[draw, circle] (D) at (1,-1) {D};
+        \node[draw, circle] (E) at (3,1) {E};
+        \node[draw, circle] (F) at (3,-1) {F};
+        \draw[->] (A) -- (B);
+        \draw[->] (A) -- (D);
+        \draw[->] (B) -- (C);
+        \draw[->] (B) -- (E);
+        \draw[->] (D) -- (C);
+        \draw[->] (D) -- (F);
+        \draw[->] (C) -- (A);
+        \draw[->] (E) -- (F);
+        \draw[->] (F) -- (C);
+    \end{tikzpicture}
+    \caption{A Big Ball of Mud.}
+    \label{fig:big_ball_of_mud}
+\end{figure}
+
+As we can see in Figure \ref{fig:big_ball_of_mud}, we do have circular dependencies and the code doesn't have any recognizable structure. If you have to create an object \code{C}, you'll have to instatiate almost the entire graph. This is a clear sign that the code is flawed.
+
+If you work with such code, the goal must be to restructure the code such that the number of connections between the objects is minimized. In Figure \ref{fig:well_structured_code} is an example how this graph could look instead.
+
+\begin{figure}[h]
+    \centering
+    \begin{tikzpicture}[scale=1.5, transform shape]
+        \node[draw, circle] (A) at (0,0) {A};
+        \node[draw, circle] (B) at (1,1) {B};
+        \node[draw, circle] (C) at (2,0) {C};
+        \node[draw, circle] (D) at (1,-1) {D};
+        \node[draw, circle] (E) at (3,1) {E};
+        \node[draw, circle] (F) at (3,-1) {F};
+        \draw[->] (A) -- (B);
+        \draw[->] (A) -- (D);
+        \draw[->] (B) -- (E);
+        \draw[->] (D) -- (C);
+        \draw[->] (D) -- (F);
+    \end{tikzpicture}
+    \caption{A well-structured code base represented as a tree.}
+    \label{fig:well_structured_code}
+\end{figure}
+
+Here is a simple code example how you can break dependencies. Let's assume you have the following code:
+
+\begin{programcode}{}   
+\begin{verbatim}
+# file_A.py
+from enum import Enum
+
+class A:
+    class State(Enum):
+        INIT = 0
+        RUNNING = 1
+        STOPPED = 2
+
+    def do_something(self):
+        return self.State.RUNNING
+
+# file_B.py
+def do_something_else():
+    return A.State.RUNNING
+\end{verbatim}
+\end{programcode}
+
+This code is bad because file\_B.py depends on the complete file\_A.py, even though it uses only a small fraction of its code. It would be better to move the State Enum to a separate file. This way file\_B.py doesn't have to depend on file\_A.py anymore. The code would look as follows:
+
+\begin{programcode}{}
+\begin{verbatim}
+# file_enum.py
+from enum import Enum
+class State(Enum):
+    INIT = 0
+    RUNNING = 1
+    STOPPED = 2 
+
+# file_A.py
+from file_enum import State
+
+class A:
+    def do_something(self):
+        return State.RUNNING
+
+# file_B.py
+from file_enum import State
+
+def do_something_else():
+    return State.RUNNING
+
+\end{verbatim}
+\end{programcode}
+
+There was no reason why the \code{State} enum should be within the \code{class A}. It was just a bad design decision. It might have made sense to put it there because the \code{class A} used it, but now the \code{class B} uses it as well. Therefore the \code{class B} has to import the entire \code{class A}.
+
+If we instead move the \code{State} enum to a separate file, we can easily import it in both \code{class A} and \code{class B}. This way we have broken the dependency between the two files. The number of imports may not have been reduced, but the quality of the code has been significantly improved. Now the dependencies are cleaned up.
+
+What we just did here is also known as the Interface Segragation Princeple (ISP). This principle states that you should have small interfaces because otherwise you import things that you don't need. And these things will clutter your code.
+
+\section{Breaking Dependencies}
+
+TODO See p. 325-400
+
+Here are some techniques to break dependencies that I have from the book "Working Effectively with Legacy Code" by Michael Feathers. The techniques are generally quite simple and the danger of introducing bugs is fairly low if applied correctly. However, there is always some risk involved, so you shouldn't apply these techniques lightly. For this reason I always explain the main difficulties of every technique.
+
+\subsection{Extract Method}
+
+It is very common that a class is too big. The class has too many methods and member variables. The class has too many responsibilities, it's a Big Ball of Mud. Everything depends on everything else. One thing you can do is to extract a method.
+
+Let's assume we have the following code
+
+\begin{programcode}{}
+\begin{verbatim}
+class Adder:
+    def __init__(self):
+        self.x = 5
+        self.y = 3
+        # ...
+
+    def add(self):
+        return self.x + self.y
+    
+    # ...
+
+adder = Adder()
+result = adder.add()
+\end{verbatim}
+\end{programcode}
+
+The first thing we can do is defining a function \code{add\_new} which implements the functionality of the \code{add} method. In this example it's not really necessary, but in general it's a good idea to have a function that does the actual work and a class that manages the state. This way you can easily test the function \code{add\_new} without having to instatiate the class \code{Adder}. Now you can already write tests for the function without having to instantiate the whole class.
+
+\begin{programcode}{}
+\begin{verbatim}
+def add_new(x, y):
+    return x + y
+
+class Adder:
+    def __init__(self):
+        self.x = 5
+        self.y = 3
+        # ...
+
+    def add(self):
+        return add_new(self.x, self.y)
+    
+    # ...
+
+adder = Adder()
+result = adder.add()
+\end{verbatim}
+\end{programcode}
+
+As a second step, you can extract the complete method out of the class. Like this you can reduce its size.
+
+\begin{programcode}{}
+\begin{verbatim}
+def add_new(x, y):
+    return x + y
+
+class Adder:
+    def __init__(self):
+        self.x = 5
+        self.y = 3
+        # ...
+    
+    # ...
+
+adder = Adder()
+result = add_new(adder.x, adder.y)
+\end{verbatim}
+\end{programcode}
+
+The new function may have quite a lot of arguments. This should be refactored by creating some dataclasses (strcuts in C++) to group the arguments together. You can also extract several methods at once. By looking at the dependencies between the functions and the variables, you'll probably get an idea how you should structure the code.
+
+\subsubsection*{Difficulties}
+
+Extract Method is a fairly simple technique. You mainly have to pay attention that you don't mix up the function arguments. The old method probably had some arguments, plus all the member variables of the class that it used. So there may be quite a lot of arguments all together. In compiled languages you have the advantage that the compiler can warn you if you forgot some arguments or you mixed up the order. Especially if you work with default arguments, you have to be careful that you don't mix anything up.
+
+
+
+\chapter{Test Dirven Development}\label{chap:tdd}
+
+Test Driven Development (TDD) is a very common technique to write good code. The idea is that you write the tests before you write the code. TDD forces you to write good code because you write the tests from a user perspective. Thus, you define how the code should look like if you had a choice. And it turns out that you always have a choice, you just didn't know so far.
+
+Now, I have to admit that doing TDD is something odd to start with. You should first get used to write proper unit tests before you start with TDD. Though once you got used to it, doing TDD feels actually quite natural. The most important thing is that you need to know what the code is supposed to do exactly. Which is anyway a prerequisite for writing good code.
+
+I highly recommend doing TDD once you are used to it. It certainly improves the quality of your code and there are no downsides to it.
+
+TODO Programming by Difference?
+
+\chapter{How Do I Test this Monstrosity}
+
+Did I already mention that I'm not a big fan of OO code? I guess I did. And here is one of the reasons: classes can be difficult to instantiate. Especially if the constructor has some nasty side effects. If there are no default constructor available, you might have to instantiate a whole tree of objects just to test a single method. This is a clear sign that the code is flawed.
+
+Now, of course, you can also have functions that are hard to deal with, but in general functions are easier to test than classes. You just pass the arguments and you get the result. This is not always the case with classes. This is one of the reasons why I prefer procedural code over OO code.
+
+The most common issue with classes is that they have some side effects in the constructor. Most notably that they open a file or a network connection. This is a clear sign that the code is flawed. The constructor should only set the initial state of the object. It should not do anything else. You should be able to select this kind of functionality with DI. Whenever you deal with something that cannot be unit tested, you should use DI and here is one of the reasons why. If you incorporate such kind of behavior in the constructor, it may become impossible to unit test a whole blob of code.
+
+There are a few problems we can encounter that make working with a class difficult:
+\begin{itemize}
+    \item The constructor has no default constructor.
+    \item The constructor does excessive amount of work.
+    \item The constructor has side effects.
+    \item You don't know what arguments you have to pass to the constructor.
+\end{itemize}
+I hope you see why I don't like OO programming. There's just too much that can go wrong that makes your code untestable. Here we see why you should never write any complex code in the constructor. It makes the code untestable.
+
+Now we want to look at a few techniques to circumvent these issues.
+
+\section{Just Instatiate the Class}
+
+How do you deal with code that contains a excessively complicated constructor?
+
+The best attempt is probably to wirte the unit test nevertheless. And once you run or compile the test, you will see where it actually breaks. Maybe you don't need to construct the entire class instance tree because it's not used by your unit test. If this is the case, lucky you. This is one of the cases where working in an interpreted language has some advantages.
+
+However, if your test somehow miraculously passes, you have to make sure that it really tests what you think it does. In order to do this, you have to deliberately break the code and see if it fails. If it doesn't fail, there is something terribly wrong with your test. This technique is generally recommended if you do anything else than TDD (p. \pageref{chap:tdd}). Because otherwise you never know what your test actually tests.
+
+If you are programming in a compiled language, you have to make sure that all the objects instantiated support the corresponding functions. If you don't know what value you should instantiate these objects with, try something like \code{Null}, \code{nullptr} or similar, depending on the programming language you work with.
+
+\section{The Dependency Injectior}
+
+Once the test runs, you have to make sure that it fulfills the criteria of a unit test. This means that the test has to be fast and deterministic. It shouldn't depend on things like a network connection, a database or the file system. These things all have to be faked or mocked away.
+
+As we have already seen, DI is the remedy of choice for such issues. And there is absolutely nothing wrong about implementing DI in your code. In fact, it is quite simple. In interpreted languages it is very simple to get it running, though it is hard to get it right. In compiled languages it takes somewhat more efforts because you have to implement an interface for the existing code. And if you can't replace the existing code, you'll have to write a wrapper around it. This is a bit more work, but it is still feasible. 
+
+On the other hand, compiled languages have the advantage that the compiler can warn you if you are doing something wrong. The most common issue of the dependency injector being that you forget to adapt all the function calls to the new signature. In interpreted languages you need either some good test coverage or you have to be careful when making the change. Where having to be careful is certainly a bad thing because things can go wrong. And things will go wrong.
+
+\subsection{Interpreted Languages}
+
+As we've already seen, for interpreted languages implementing DI is really simple. This is due to the duck typing, which allows you to pass any object that supports the same functions, opposite to compiled languages where you have to define an interface or an abstract base class to use polymorphism. Let's take a look again at the example on p. \pageref{prog:average_of_file}.
+
+\begin{programcode}{}
+\begin{verbatim}
+def average_of_file(file_name):
+    with open(file_name, 'r') as f:
+        contents = f.read()
+    numbers = [int(x) for x in contents.split(',')]
+    return sum(numbers)/len(numbers)
+
+if __name__ == '__main__':
+    print(average_of_file('test.csv'))
+\end{verbatim}
+\end{programcode}
+
+Now we can take the code that we don't like and put it into a dedicated function. Then we pass the function as a function argument.
+
+\begin{programcode}{}
+\begin{verbatim}
+def read_file(file_name):
+    with open(file_name, 'r') as f:
+        return f.read()
+
+def average_of_file(reader, file_name):
+    contets = reader(file_name)
+    numbers = [int(x) for x in contents.split(',')]
+    return sum(numbers)/len(numbers)
+
+if __name__ == '__main__':
+    print(average_of_file('test.csv'))
+\end{verbatim}
+\end{programcode}
+
+But this was only the simple half of the task. Now we have to find all locations where \code{average\_of\_file} is called and replace it with the new signature. If you work in a huge project where there are several functions with the same name, this might be a bit tricky. Fortunately though, this is usually not the task and you can run a simple search in your editor.
+
+\subsection{Compiled Languages}
+
+In compiled languages, we have to distinguish between DI for functions or classes. For functions, the process is quite similar to the one in interpreted languages. You just have to pass the function as an argument to the other function. You can just implement a mock function and pass it as a function argument. 
+
+For classes, the process is a bit more complicated. You have to implement an interface for the existing code. In C++, you have to pass a pointer to the base class. This is especially cumbersome if the class is from a third party API. In this case you cannot change the class. Instead, you have to write a wrapper around the class and implement the code using the wrapper.
+
+\begin{programcode}{}
+\begin{verbatim}
+#include <filesystem>
+#include <ifstream>
+#include <iostream>
+
+using namespace std; 
+
+class FileReader{
+public:
+    string print_lines(const string& file_name){
+        ifstream file(filename);
+        string line;
+        while (getline(file, line)) {
+            cout << line << endl;
+        }
+    }
+};
+
+int main() {
+    RealFileReader reader;
+    reader.print_lines("some_file.txt");
+}
+\end{verbatim}
+\end{programcode}
+
+Now there are two cases: either we have access to the source code of the \code{FileReader} class and we can make it inherit from a base class, or we don't have access to the source code and we have to write a wrapper around it. In the first case, the code looks as follows:
+
+
+\begin{programcode}{}
+\begin{verbatim}
+#include <ifstream>
+#include <iostream>
+
+using namespace std; 
+
+class FileReader{
+public:
+    string print_lines(const string& file_name) = 0;
+};
+
+class RealFileReader : public FileReader{
+public:
+    string print_lines(const string& file_name) override {
+        ifstream file(filename);
+        string line;
+        while (getline(file, line)) {
+            cout << line << endl;
+        }
+    }
+};
+
+class FakeFileReader : public FileReader{
+public:
+    string print_lines(const string& file_name) override {
+        cout << "line 1" << endl;
+        cout << "line 2" << endl;
+    }
+};
+
+int main() {
+    auto reader = make_unique<RealFileReader>();
+    reader->print_lines("some_file.txt");
+}
+\end{verbatim}
+\end{programcode}
+
+This took some efforts as we are working with C++ afterall. But it is still feasible. The other case is when we don't have access to the source code of the \code{FileReader} class. In this case we have to write a wrapper around it. This code looks as follows:
+
+\begin{programcode}{}
+\begin{verbatim}
+#include <ifstream>
+#include <iostream>
+
+using namespace std;
+
+class FileReaderWrapperBase{
+public:
+    string print_lines(const string& file_name) = 0;
+};
+
+class RealFileReaderWrapper : public FileReaderWrapperBase{
+public:
+    string print_lines(const string& file_name){
+        FileReader reader;
+        reader.print_lines(file_name);
+    }
+};
+
+class FakeFileReaderWrapper : public FileReaderWrapperBase{
+public:
+    string print_lines(const string& file_name){
+        cout << "line 1" << endl;
+        cout << "line 2" << endl;
+    }
+};
+
+int main() {
+    auto reader = make_unique<RealFileReaderWrapper>();
+    reader->print_lines("some_file.txt");
+}
+\end{verbatim}
+\end{programcode}
+
+Yes, this is the technique to mock a class in C++ if you don't have access to it. The efforts required are moderate since you only have to wrap the methods that you really need. You just have to know this trick and you have no more excuses not to use DI.
+
+\section{Costructor with Side Effects}
+
+Let's say you have the following code with a counter implemented inside the constructor. This might have seemed like a reasonable thing to do, but now as you start writing unit tests, you realize that this has severe drawbacks.
+
+\begin{programcode}{}
+\begin{verbatim}
+class Counter:
+    counter = 0
+
+    def __init__(self):
+        Counter.counter += 1
+
+    def get_counter(self):
+        return Counter.counter
+
+if __name__ == '__main__':
+    counter = Counter()
+    print(counter.get_counter()) # prints 1
+    counter2 = Counter()
+    print(counter2.get_counter()) # prints 2
+\end{verbatim}
+\end{programcode}
+
+At first, this may not seem like a problem. Only once you wrote a few tests, you realize the drawbacks of this design.
+
+\begin{programcode}{}
+\begin{verbatim}
+def test_counter1():
+    counter = Counter()
+    assert counter.get_counter() == 1
+
+def test_counter2():
+    counter = Counter()
+    assert counter.get_counter() == 2
+\end{verbatim}
+\end{programcode}
+
+Now it might dawn on you that you have a problem. The tests are locked. If you swap them, they fail. They depend on external factors (the \code{counter}) which is a no-go for unit tests.
+
+Unfortunately there is no single rule how to deal with this issue. Each and every case needs to be looked at individually. But there are a few common techniques that you can use to deal with this issue.
+
+\subsection{Remove the Side Effects}
+
+This is of course the gold standard. If you can get rid of the side effects in the constructor, you should do so. However, this is usually not possible. There might be a reason why the constructor looks the way it does.
+
+\subsection{Undo the Side Effects in the Destructor}
+
+This is generally already more feasible than removing the side effects completely. If you undo them in the Destructor, you destroy the object and the side effects are gone. This works at times. For example if you open a file inside the constructor, you may want to close it in the destructor. Though, of course, this doesn't always work. The idea of the counter mentioned above is to keep the state.
+
+\subsection{Undo the Sige Effects in a Separate Function}
+
+Now here things get a little ugly. If the solutions mentioned above don't work, you'll have to take some desperate measures. You have to introduce code that is only dedicated for testing purposes. This is a very bad sign. You should never have to write production code for testing purposes. This is the tail wagging the dog. This is a desperate measure that you should avoid at all costs. But you work with legacy code and sometimes there is no other way to get the code under test. So let's see how this code could look like.
+
+Inside the class \code{Counter} we add a new function \code{set\_counter} that allows us to set the counter to any value we want. This function is only used for testing purposes. Note that the user code doesn't change at all.
+
+\begin{programcode}{}
+\begin{verbatim}
+class Counter:
+    counter = 0
+
+    def __init__(self):
+        Counter.counter += 1
+
+    def get_counter(self):
+        return Counter.counter
+
+    def set_counter(self, value):
+        Counter.counter = values
+
+if __name__ == '__main__':
+    counter = Counter()
+    print(counter.get_counter()) # prints 1
+    counter2 = Counter()
+    print(counter2.get_counter()) # prints 2
+\end{verbatim}
+\end{programcode}
+
+In the test code we now have to set the counter for every test case. This is the only way to make the code testable.
+
+\begin{programcode}{}
+\begin{verbatim}
+def test_counter1():
+    counter = Counter()
+    counter.set_counter(1)
+    assert counter.get_counter() == 1
+
+def test_counter2():
+    counter = Counter()
+    counter.set_counter(1)
+    assert counter.get_counter() == 1
+\end{verbatim}
+\end{programcode}
+
+As I said, this is an ugly hack. But it's the only solution that I know.
+
+TODO: reread the chapter on testing classes and see if there is something that can be added here.
+
+\chapter{I Can't Test this Method}
+
+Similar to clases, there can be problems if you want to test a method or function:
+
+\begin{itemize}
+\item The method is private
+\item The method has side effects
+\item You don't know how to instantiate the arguments
+\end{itemize}
+
+\section{The Method is Private}
+
+If you feel like testing a method which is private, just make it public. This is certainly not recommended for good code, but here we are dealing with legacy code. And getting the method under test is more important.
+
+Once you made the method public, you can write unit tests for it. And when you have plenty of unit tests, you might be able to extract this method, maybe along with some other methods, into a new class or a set of freestanding functions. The fact that you wanted to test this method to begin with is a clear indication that it is too complicated and should be refactored. So, alltogether, refactoring this method into its own class is anyway a good idea.
+
+\subsection{Final}
+
+Making methods \code{final} or \code{sealed} is generally a good thing. In fact, this should be the standard and overriding functions should only be allowed if it is explicitly allowed. With that respect, many OO programming languages are flawed. There were times when it was considered good practice if a test case inherits from the class it is testing. But this is a really bad idea. This is similar to testing private (or protected) methods. You should always test the public interface of a class. Never the private methods. You should only test private methods if you are working with legacy code.
+
+In my opinion you should never write tests that inherit from the class under test. The worst thing you have to do is making private methods public and then refactor the code once it's tested.
+
+\subsection{The Method has Side Effects}
+
+First, let's think about good code. In good code, all the changes that a method or function makes are immediately visible to the outside. These functions only depend on the function arguments and the only thing they do is calculating the return value. They are called pure functions and are the gold standard of good code. In fact, functional programming is all about writing pure functions.
+
+Unfortunately, once in a while you have to communicate to the outside. Either by reading a file, writing to a database or sending a message over the network. This is when you have to deal with side effects. And this is when you have to deal with the problem of testing these functions.
+
+But you can limit these side effects to a minimum. Robert C. Martin calls this a humble object. It has only one job: get the data from a file and return it. You won't be able to write a unit test for this function, but the function is so simple that it shouldn't be necessary.
+
+Our goal is to wirte as many pure functions as possible and limit the side effects to a minimum. This makes the code easier to test and easier to understand.
+
+Now you might already see one problem with pure functions: methods are generally not pure functions. They frequently have side effects as they change the member variables of the class. This is the main reason why I don't like classes. Classes have hidden states and are therefore hard to understand and hard to test.
+
+\section{You Don't Know How to Instantiate the Arguments}
+
+This problem may show up regardless whether you work with functions, methods or classes. 
+
+\chapter{I Need to Make a Change, What Methods Should I Test?}
+
+This is another difficult topic. As the code may have side effects and use global variables, in theory you have to check all the code that could be affected by the change. You'd have to test everything. In the extreme case you'd have to test almost the entire code base. For very bad code, this is indeed the only option you have: write integration tests that cover all the code but are slow and impresice. You won't get such a good feedback as you could when writing unit tests, but it's better than nothing.
+
+Now a general thing that you can do is using DI (p. \pageref{sec:dependency_injection}). DI is your friend because it helps you to get these dependencies under control. Just mock or fake a method and your code becomes much simpler to understand. Once you mocked the most complicated methods, your code should be easy to understand and therfore also easy to test.
+
+The algorithm to deal with such methods or functions is as follows:
+\begin{enumerate}
+    \item Write a few tests for any interface you can find. This can also be the input and output of the entire software. I just hope that your software has some kind of interface.
+    \item Implement DI. Use the tests to see if the code still works.
+    \item Write a mock for the method that you implemented DI for.
+    \item Write unit tests for the method.
+    \item Change the method.
+\end{enumerate}
+
+
+\begin{programcode}{}
+\begin{verbatim}
+def file_reader(file_name):
+    with open(file_name, 'r') as f:
+        return f.read()
+
+def average_of_file(reader, file_name):
+    contents = reader(file_name)
+    numbers = [int(x) for x in contents.split(',')]
+    return sum(numbers)/len(numbers)
+
+if __name__ == '__main__':
+    print(average_of_file(file_reader, 'test.csv'))
+\end{verbatim}
+\end{programcode}
+
+
+\begin{programcode}{}
+\begin{verbatim}
+def mock_reader(_):
+    return '1,2,3,4,5'
+
+def average_of_file(reader, file_name):
+    contents = reader(file_name)
+    numbers = [int(x) for x in contents.split(',')]
+    return sum(numbers)/len(numbers)
+
+def test_average_of_file():
+    assert average_of_file(mock_reader, 'test.csv') == 3
+\end{verbatim}
+\end{programcode}
+
+\section{Lean on the Compiler}
+
+The compiler is such an ordinary tool that people might forget how useful it is. The compiler not only converts your source code into some form of binary, it also tells you if some part of the code doesn't work. This is very handy if you make some changes, like renaming a function, and you are not sure if they will work. In a compiled language you can make these changes nevertheless and just see if it still compiles. Of course, leaning on the compiler has some pitfalls that you have to be aware of. It is no panacea to make changes to your code. Afterall, it's not a refactoring tool.
+
+One example Michael Feathers gives is refactoring global variables. If you change a global variable, either by renaming it, or by puting it into a class, the compiler will produce errors wherever this variable was used. Now it's your task to fix these errors and you're probably done.
+
+However, there is one danger with leaning on the compiler: if you change an overriden method, the code will still compile because the compiler can use the base class method. Or you have different variables with the same name. This is very dangerous. For this reason, you should always first check, that the code really breaks when making a change. This is one of the reasons why I recommend not to use implementation inheretance at all. And you shouldn't redefine variables, this results in very brittle code and should be avoided. However, these are the things you have to look out for. 
+
+Now of course, you could also do some gloabal search and replace. But this is a very dangerous thing to do. You never know if you changed the variable in the right way.
+

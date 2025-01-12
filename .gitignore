@@ -1,0 +1,29 @@
+
+*.html
+*.webp
+*.odt*
+*.odg
+
+*.pdf
+
+# latex
+*.aux
+*.fdb_latexmk
+*.fls
+*.idx
+*.ilg
+*.ind
+*.log
+*.out
+*.synctex.gz
+*.thm
+*.toc
+
+.vscode/
+
+# specific files
+code_examples/
+temp.py
+index.txt
+desired_index.txt
+all_words.txt

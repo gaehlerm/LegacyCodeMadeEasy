@@ -1,0 +1,153 @@
+Legacy Code Made Easy
+
+Some definitions
+- seam
+- pinch point
+- etc.
+
+good code
+- no side effects
+- small classes
+- interfaces
+- small/no classes
+- simple constructors
+
+Foreword
+
+This book is based on Michael Feathers book "Working Effectively with Legacy Code" (WELC). It covers a very important topic: how to deal with old, badly structured, untested code. In short, legacy code. Legacy code is a very common problem. Even if you try to write good code to begin with, code tends to rot and becomes legacy code over time. This code is worth trillions and countless teams of software engineers have only one task: to keep this code alive at all costs.
+
+Many of the techniques explained in the afore mentioned book are still useful, but there are certainly some aspects that could be written differently nowadays. A common example is dependency injection (DI), which is now a very common technique to handle complexity. Feathers calls this "parametrize constructor" and in my opinion he doesn't give this technique enough credit. Furthermore, Feathers praises the advantages of object-oriented (OO) code, which in my opinion is somewhat misguided. As I explained in my book "Software Engineering Made Easy", procedural code can do anything that OO code can do as well, and in most cases it's even simpler.
+
+Another issue is that the book focuses too much on C++ and its particularities like preprocessor macros and linking of custom files. Now this is certainly a book about working with old code and such techniques therefore can be useful, but they shouldn't be first class citizens. Such techniques are desperate measures for special issues and should only be used when absolutely needed.
+
+It also has to be said that WELC nor this book contain solutions for all different kinds of problems. For some specific issues we can give you blueprints on how to solve them, but the main task still lies with the programmer, you.  
+
+As a summary, one can say that WELC stood the test of time, but it deserves a complete overhaul. I hope that this overhaul will be read for another twenty years as well.
+
+Marco Gähler
+
+\chapter{Introduction}
+
+The goal of this book is quite simple: explain to you how to make your code better. This requires two steps: you have to find out why your code is bad, and you need to have an idea how the code could look like instead. There are dedicated books on this topic and I highly recommend you'd read my book "Software Engineering Made Easy" before you read this book. I will always give some explanations on the code examples here, on why they are bad and how it could be improved, but you should be able to judge these things by yourself. I'm only giving you a very short overview on the most important points.
+
+Here is a list with some signs of bad code. This list is by no means exhaustive, but I think it covers the most common issues.
+
+\begin{itemize}
+    \item Classes and functions are too long.
+    \item There are too many levels of indentation.
+    \item There are no unit tests.
+    \item Use of comments instead of good names for variables and functions.
+    \item There are no interfaces.
+    \item There are global variables.
+    \item Functions have too many arguments.
+\end{itemize}
+
+\sections{Too long Classes and Functions}
+
+Classes and functions which are too long share the same problems. They tend to grow over time and start becoming one big unreadable pile of code. I'm not even going to show you an example as it would be a waste of paper. You quite certainly know by now that a function of more than 20 lines of code is generally extremely hard to comprehend. Of course, there are huge differences between functions. Some are 5 lines long and cannot be understood while others are 20 lines long and you still feel perfectly fine. But I hope you get the memo: long functions are pretty hard to understand and should therefore be avoided. The very same argumentation also holds for classes.
+
+There are several indicator whether a function or a class is well written. The simplest and most universally applicable rule is whether you can write a unit test for it. This is a quite good rule of thumb. If you are not able to write a unit test, you don't understand the code well enough. A clear sign that it's too complex. It should be broken into pieces.
+
+Another good rule is the Single Responsibility Principle (SRP), which states that every object should do exactly one thing. 
+
+\section{Too Many Levels of Indentation}
+
+Nested code is a direct consequence of having complicated logic with many if statements or loops. Now I hope you already see the problem: code should never by complicated. So we have a direct proof that nested code is bad.
+
+As a rule of thumb, one can say that good code contains few if statements because good code is easy to understand. If statements on the other hand are a very common source of bugs because they are so easy to confuse. Instead of using if statements, one can use for example polymorphism or at times you can also restructure your code in order to get rid of if statements.
+
+\section{No Unit Tests}
+
+Usually, no unit tests is one criterion to rule them all. If you have good test coverage, you usually also have reasonably good code. As we have seen on p. ?, having unit tests means that you have good class design. This rule also holds for the other points in our list. If you have unit tests, you inevitably have also some interfaces that you used for writing the tests with. So one can say that having unit tests is a very strong indication that your code is fine.
+
+Now in theory, you could also write pristine code without having unit tests, but this is extremely difficult to achieve. The danger of writing way huge classes and otherwise convoluted code is just too big and unit tests are generally the only thing to keep your programming style within boundaries.
+
+\section{Comments}
+
+Code should be self documenting. The syntax explains to you exactly what the code does. Adding a comment explaining what a line of code does is an unnecessary redundancy. And as the code changes over time, chances are that the comment goes out of date. Long story short: never comment what a piece of code does. Comments are no remedy for bad code.
+
+However, comments can explain things that code cannot explain. Code cannot explain, why something is the way it is. In a comment you can add a ticket number and then everyone can look up and reason for himself, why the code has to look the way it does.
+
+\section{No Interfaces or Global Variables}
+
+The optimal case is a function whose output only depends on its function arguments. It has no internal state, it reads no file and it doesn't talk to the database. This is called a pure function and is the standard in functional programming. Pure functions are great. They are very easy to test as you know what they depend on. The output will always be the same and if you write a unit test for such a function, it will never fail. It has a well defined interface.
+
+Now the complete opposite are class methods or functions with global variables. These objects are extremely hard to comprehend because they depend on hidden states. Just think about it: do you prefer a function with 3 arguments, or a function with no arguments, but 3 global variables that it depends on? I hope you prefer the function with 3 arguments because it's explicit. You see immediately what the function depends on and it is therefore much simpler to write a test for it. This function has a well defined interface. Meanwhile the interface of the function using 3 global variables is very blurry. You don't really know what that function depends on and therefore it's extremely difficult to work with such a function.
+
+\section{Too Many Arguments}
+
+This problem is generally less severe than the other points discussed in this chapter. Still, you should keep the number of arguments used by a function or method at a minimum. Robert C. Martin is quite strict about this point and recommends to use at most 3 arguments. I completely agree with him that having at most 3 function arguments is optimal, however at times it takes too much effort to keep it that way. You frequently add functionality to a function later on, which comes along with a new function argument. Now, this is a sign that the function is not designed anymore properly, but on the other hand, you don't always have time to write pristine code.
+
+Having too many arguments in your functions is a sign that you haven't structured your data properly. Think about all the different tools a plumber uses. But he has them neatly sorted in his toolbox. You have to do the same: sort your variables.
+
+\section{Summary}
+
+In this chapter we looked at some of the most prevalent signs of bad code and we saw that there is one rule to rule them all. Unit tests! Unit tests are a very good indicator whether your code is good. Unfortunately you are quite certainly working with code that doesn't have unit tests, otherwise you wouldn't be reading this book.
+
+What we'll learn throughout the rest of this book is how to improve your code and deal with the other indications of bad code. And as I already mentioned before, there won't be a panacea. Or as Winston Churchill said: "I have nothing to offer but blood, toil, tears and sweat."
+
+\chapter{Refactoring}
+
+Refactoring is the process to change the structure of the code without changing its functionality. Now this may sound like a very simple thing to do but I guess you have all tried it before and failed for various reasons. Refactoring involves two steps. First you need to have a vision how the code could look instead. Without this vision, starting a refactoring is fairly pointless. How else are you supposed to make the code better? However, this is still the easy part of refactoring. You can also play around and you might get an idea how the code could look like. The even harder part is that you are not allowed to change the functionality of the code. This can give you nightmares. It's just too difficult to change the code without altering its functionality.
+
+One thing that helps a lot in the refactoring process are unit tests. Unit tests are great at fixing the functionality of a piece of code. They are no guarantee that the code is always correct, but if you have a good test coverage of your code, you'll feel much safer to do refactoring. In fact, good test coverage is pretty much the only thing which will make you feel safer. For these reasons, it is generally advisable to write unit tests covering the code you are planning to change. The problem is, that writing unit tests is not always possible. Or you don't know what you are supposed to test. If the only interface available has a dozen variables you'll have a very hard time figuring out what they all do.
+
+Refactoring is very mean because you usually have to refactor bad code. But if the code is bad, refactoring it becomes increasingly difficult. As already mentioned, you'll struggle understanding what the code does or there are no useful interfaces around. Therefore, you won't be able to fix the behavior of the code using unit tests. This leads to the circle of doom of refactoring.
+
+\section{Scratch Refactoring}
+
+When refactoring, it is important to have a vision how the code could look like. One approach to this goal is scratch refactoring. Scratch refactoring has two rules: you don't care if the code ultimately works, and you discard the code once you're done. Now, you should still try to implement code that works. Scratch refactoring is worthless if the code created cannot work at all. Afterall, you are supposed to get an idea how it could look like and that should be as close to a working version of the code as possible.
+
+The great thing about scratch refactoring is that you can get a feel for the code without much effort. Where might the problems be? How should the fundamental data structure look like? How much effort may it be to do the refactoring? These is all crucial information that you like to have before starting a full-fledged refactoring where you first have to find interfaces, write tests, etc.
+
+\chapter{Components for Refactoring}
+
+Before we can get started with the actual contents of this book, we first have to introduces some terminology. Most of the terms were introduced by Michael Feathers.
+
+As we have already seen that by far the most difficult part of refactoring is writing unit tests. 
+
+\section{Vice}
+
+A vice is a clamping device to hold physical objects in order to process them mechanically. What we need in refactoring is the same thing for software. We need to get a hold on a certain piece of code that we want to edit.
+
+In software development, every piece of code has two interfaces of interest. One for the input and one for the output. Everything in between should be fixed by the vice. The code inside the vice should be as small as possible in order to reduce the complexity that the vice needs to hold. Generally this complexity is limited by the interfaces available where you can write tests for. But it could also be that you have to skip a few interfaces as you have to refactor them as well. Though this happens rarely. In good code, the code is structured well enough such that you generally only have to touch the code within one pair of interfaces, meanwhile in bad code the interfaces are so far apparat that the closest pair of interfaces is completely sufficient.
+
+\section{Enabling point}
+
+The enabling point is the input of the code under test. This can be a function call or the constructor of an object. It may also be required to perform several steps, akin to the setup of a unit test. In the enabling point, you can not only change the values of some operation. At times, you can also use dependency injection (DI) to polymorphically change the behavior of the entire code within the vice.
+
+\section{Sensing Point}
+
+The sensing point is at the output of the code in the vice. It is where you see the result of some operation. This can be used for the assertions of the unit tests that you are going to write.
+
+\section{Unit Tests}
+
+As already mentioned before, unit tests is an extremely important topic as it is the single most characteristics to determine whether a piece of code is well written or not. Unit tests have three properties:
+
+\begin{itemize}
+\item They give you a definite answer whether the code works
+\item They are fast
+\item They are easily understandable
+
+Let me briefly elaborate on these points:
+
+First, unit tests never depend on any external factors like the file system or a network connection. These things could fail. Instead, you have to use for example dependency injection to hand over a fake or a mock. This may feel like cheating at first sight, but it is not. You don't want to test if the network is working, nor do you want to rely on a file that someone might have deleted. These things would only make the tests unreliable.
+
+Second, unit tests should only take a few milliseconds. You will be running hundreds if not thousands of unit tests all the time. And if this process takes more than a few seconds, it will be tedious. For this reason you should abstract everything away that is computationally expensive. This can generally be done using dependency injection (DI), along with faking and mocking.
+
+Third, unit tests have to be easily understandable. Setting up a unit test and checking its results should only take a few lines of code. If this becomes tedious, it is a clear indication that your code is flawed.
+
+As a rule of thumb, one can say that unit tests can only be written for good code. Of course, there might be exceptions, but those are very rare. Vice versa, if you manage to write unit tests to your code, your code is quite certainly well written.
+
+For these reasons, one can say that unit tests are probably the single most important factor of writing good code. Not only because they facilitate refactoring, but also because they force you to write good code.
+
+Now I assume that you already know how to write unit tests and what they are generally about. So I'll refrain from writing an introduction on unit tests here. 
+
+\section{Dependency Injection}
+
+Dependency Injection (DI), by Michael Feathers referred to as "parametrizing constructor", is a very common and powerful technique to pass functionality down the call stack. DI is particularly important if you have some object that you can't write unit tests for. This can be either because executing some method of this object is slow or it might not be deterministic, like communicating over a network connection.
+
+
+
+
+

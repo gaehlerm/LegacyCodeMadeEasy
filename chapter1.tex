@@ -31,7 +31,7 @@ Of course, this is a very pessimistic scenario. In most cases, at least some par
 
 \section{Unit Tests}
 
-As we'll see many times throughout this book, having good (automated) test coverage with unit tests is paramount. The unit tests serve as a safety net when you perform changes to the code. Unit tests immediately give you feedback whether the code still works as expected. As long as the code you're working with is covered with tests, you can be fairly sure that you didn't break anything. Unit tests are no guarantee that everything still works, but they are by far the best safety net you can have.
+As we'll see many times throughout this book, having good (automated) test coverage with unit tests is paramount. The unit tests serve as a safety net when you perform changes to the code. Unit tests immediately give you feedback whether the code still works as expected. As long as the code you're working with is covered with tests, you can be fairly sure that you didn't break anything. Unit tests can never guarantee that everything still works, but they are by far the best safety net available in software engineering.
 
 Unit tests have three properties:
 \begin{itemize}
@@ -239,6 +239,18 @@ Test coverage tools are certainly not the perfect tool for improving your code q
 
 Possibly one of the most important tools is the compiler. The compiler not only converts the code into some form of binary, it also gives us valueable information if something is wrong. This can be very helpful if you do some refactoring. Let's say you add another argument to a function. If you forget to update all the function calls, you'll get a compiler error. To novice programmers, this may seem like a nuisance. But in fact, it is a very helpful tool that points out your mistakes. Furthermore you should also use the warnings of the compiler. The warnings are there for a reason and I encountered several compiler warnings that prevented me from making a mistake. For this reason, I recommend to always compile your code with the highest warning level and to treat all warnings as errors. However, if you work with legacy code, this may not always be possible as you would get hundreds of errors. In this case, you should at least treat all new warnings as errors.
 
+
+\subsubsection*{Lean on the Compiler}
+
+The compiler is such an ordinary tool that people might forget how useful it is. The compiler not only converts your source code into some form of binary, it also tells you if some part of the code doesn't work. This is very handy if you make some changes, like renaming a function, and you are not sure if they will work. In a compiled language you can make these changes nevertheless and just see if it still compiles. Of course, leaning on the compiler has some pitfalls that you have to be aware of. It is no panacea to make changes to your code. Afterall, it's not a refactoring tool.
+
+One example Michael Feathers gives is refactoring global variables. If you change a global variable, either by renaming it, or by puting it into a class, the compiler will produce errors wherever this variable was used. Now it's your task to fix these errors and you're probably done.
+
+However, there is one danger with leaning on the compiler: if you change an overriden method, the code will still compile because the compiler can use the base class method. Or you have different variables with the same name. This is very dangerous. For this reason, you should always first check, that the code really breaks when making a change. This is one of the reasons why I recommend not to use implementation inheretance at all. And you shouldn't redefine variables, this results in very brittle code and should be avoided. However, these are the things you have to look out for. 
+
+Now of course, you could also do some gloabal search and replace. But this is a very dangerous thing to do. You never know if you changed the variable in the right way.
+
+
 \subsection{Interpreted Languages}
 
 Interpreted languages at times seem like a bliss. No more compilation times! Something people 20 years ago could only dream of. But as I already mentioned, a compiler can be extremely handy as it can warn you if you might make a mistake. This is a serious drawback of interpreted languages. Of course, you can use a linter to check your code.
@@ -250,7 +262,9 @@ Interpreted languages have some other drawbacks as well. While you don't have to
 
 There are many cases where you work with some sub-optimal code base. The classes and functions are too long, and, of course, there are no unit tests around. But you would still like to add some functionality to the code without disrupting it too much. Now the question is: how do you do that?
 
-The answer is: onion layer code. You take the existing code and add a wrapper around it. This doesn't work for any kind of code, but there are times when you have to do something that you can do at the beginning or the end of the function. A very simple example is the \code{\@timeit} decorator in Python which measures the time required to execute a function.
+\section{Wrap Function}
+
+One answer is: onion layer code. You take the existing code and add a wrapper around it. This doesn't work for any kind of code, but there are times when you have to do something that you can do at the beginning or the end of the function. A very simple example is the \code{\@timeit} decorator in Python which measures the time required to execute a function.
 
 \begin{programcode}{}
 \begin{verbatim}
@@ -316,7 +330,13 @@ This process consists of three fairly simple steps:
     \item Call the renamed function (\code{add\_one\_inner}) and the new function \newline(\code{filter\_items}) from the function with the old name (\code{add\_one}).
 \end{enumerate}
 
+\section{Sprout Function}
+
+\section{Programming by Difference}
+
 \chapter{Dependencies}
+
+Dependencies are an inevitable evil in software engineering. Somehow you have to make different parts of the code interact with each other. Dependencies are the glue that holds everything together. But too much glue and makes everything sticky.
 
 \section{About Dependencies}
 
@@ -430,13 +450,17 @@ What we just did here is also known as the Interface Segragation Princeple (ISP)
 
 \section{Breaking Dependencies}
 
-TODO should we split this up by the chapters?
+TODO do we need this section or should we split it up and move the explanations to the individual chapters?
 
 TODO See p. 325-400
 
-Here are some techniques to break dependencies that I have from the book "Working Effectively with Legacy Code" by Michael Feathers. The techniques are generally quite simple and the danger of introducing bugs is fairly low if applied correctly. However, there is always some risk involved, so you shouldn't apply these techniques lightly. For this reason I always explain the main difficulties of every technique.
+Breaking dependencies is probably the most important aspect of this book. Like the rest of this book, most techniques that I present are from Michael Feathrs book "Working Effectively with Legacy Code". The techniques are generally quite simple and the danger of introducing bugs is fairly low if applied correctly. However, there is always some risk involved, so you shouldn't apply these techniques lightly. For this reason I always explain the main difficulties of every technique.
 
-\subsection{Extract Method}
+I decided to explain these techniques in the chapters where they fit best. Here is a short overview of the techniques that I present in this book:
+
+TODO create a list
+
+\subsection{Extract Method}\label{sec:extract_method}
 
 It is very common that a class is too big. The class has too many methods and member variables. The class has too many responsibilities, it's a Big Ball of Mud. Everything depends on everything else. One thing you can do is to extract a method.
 
@@ -622,7 +646,7 @@ class FakeDB:
 In general I recommend writing mocks because they are so much simpler than fakes. You only need fakes if you really want to simulate some physical device.
 
 
-\chapter{How Do I Test this Monstrosity}
+\chapter{How Do I Test this Monstrosity}\label{chap:how_do_i_test_this_monstrosity}
 
 Did I already mention that I'm not a big fan of OO code? I guess I did. And here is one of the reasons: classes can be difficult to instantiate. Especially if the constructor has some nasty side effects. If there are no default constructor available, you might have to instantiate a whole tree of objects just to test a single method. This is a clear sign that the code is flawed.
 
@@ -655,9 +679,9 @@ If you are programming in a compiled language, you have to make sure that all th
 
 Once the test runs, you have to make sure that it fulfills the criteria of a unit test. This means that the test has to be fast and deterministic. It shouldn't depend on things like a network connection, a database or the file system. These things all have to be faked or mocked away.
 
-As we have already seen, DI is the remedy of choice for such issues. And there is absolutely nothing wrong about implementing DI in your code. In fact, it is quite simple. In interpreted languages it is very simple to get it running, though it is hard to get it right. In compiled languages it takes somewhat more efforts because you have to implement an interface for the existing code. And if you can't replace the existing code, you'll have to write a wrapper around it. This is a bit more work, but it is still feasible. 
+As we have already seen, DI is the remedy of choice for such issues. And there is absolutely nothing wrong about implementing DI in your code. In fact, it is quite simple. In interpreted languages it is very simple to get it running. In compiled languages it takes somewhat more efforts because you have to implement an interface for the existing code. And if you can't replace the existing code, you'll have to write a wrapper around it. This is a bit more work, but it is still feasible. 
 
-On the other hand, compiled languages have the advantage that the compiler can warn you if you are doing something wrong. The most common issue of the dependency injector being that you forget to adapt all the function calls to the new signature. Though in most languages, you can use default arguments to avoid this issue.
+On the other hand, compiled languages have the advantage that the compiler can warn you if you are doing something wrong. The most common issue of the dependency injector being that you forget to adapt all the function calls to the new signature if you decide not to use default values.
 
 \subsection{Interpreted Languages}
 
@@ -676,7 +700,7 @@ if __name__ == '__main__':
 \end{verbatim}
 \end{programcode}
 
-Now we can take the code that we don't like and put it into a dedicated function. Then we pass the function as a function argument.
+Now we can take the code that we don't like and put it into a dedicated function. Then we pass the function as a function argument. At the same time, we can also implement a fake function that returns some predefined values. This code looks as follows:
 
 \begin{programcode}{}
 \begin{verbatim}
@@ -692,13 +716,16 @@ def average_of_file(file_name, reader=read_file):
     numbers = [int(x) for x in contents.split(',')]
     return sum(numbers)/len(numbers)
 
-if __name__ == '__main__':
-    print(average_of_file('test.csv'))
-    print(average_of_file('not_existing.txt', fake_file))
+print(average_of_file('test.csv'))
+print(average_of_file('not_existing.txt', fake_file))
 \end{verbatim}
 \end{programcode}
 
-But this was only the simple half of the task. Now we have to find all locations where \code{average\_of\_file} is called and replace it with the new signature. If you work in a huge project where there are several functions with the same name, this might be a bit tricky. Fortunately though, this is usually not the task and you can run a simple search in your editor.
+That's it, you're done. Now you can write unit tests that use the \code{fake\_file} function.
+
+It is important to mention that the default argument should be the object that was used so far. This way you don't have to change the existing code and the chances of breaking something are minimized.
+
+If you decide not to use default arguments for whatever reason, you'll have to change all the function calls in the code. This can be tedious in a very large code base. I recommend to use default arguments, unless you work with some programming language that doesn't support them.
 
 \subsection{Compiled Languages}
 
@@ -812,7 +839,68 @@ int main() {
 
 Yes, this is the technique to mock a class in C++ if you don't have access to it. The efforts required are moderate since you only have to wrap the methods that you really need. You just have to know this trick and you have no more excuses not to use DI.
 
-\section{Costructor with Side Effects}
+\subsection{Not Instantiable Arguments}
+
+When working with legacy code, you may struggle to instantiate some objects that you need for your tests. This problem may show up regardless whether you work with functions, methods or classes. The reasons can be manifold but they are always a sign for bad code. As we learned, good code is easy to test. And if it's not easy to test, it is most likely bad. 
+
+The solution is always the same, regardless if you work with functions, methods or classes. You should use the dependency injector (p. \pageref{sec:dependency_injector}). This is the gold standard. The dependency injector allows you to fake or mock the object which is hard to instantiate or has side effects. You are not going to test these objects that are hard to instantiate anyway because you can't. You'd have to fix them, but that's another story. Instead you want to test the code that uses these objects. You want to test everything else.
+
+\begin{programcode}{}
+\begin{verbatim}
+class A:
+    def __init__(self):
+        # assume we have some bad side effects here
+        pass
+
+    def return_A(self):
+        return "A"
+    
+class B:
+    def return_B(self):
+        return "B"
+
+def my_function(a, b):
+    return a.return_A() + b.return_B()
+
+# in tests.py
+def test_my_function_returns_A():
+    assert my_function(A(), B()) == "AB"
+\end{verbatim}
+\end{programcode}
+
+This would be perfectly viable code, if it wasn't for the bad side effect in the constructor of \code{A}. Now what we have to do instead is to apply the dependency injector and create a mock for \code{A}. As we are using Python, we don't need a base class. It is sufficient to write a class that implements the same methods as \code{A}.
+
+\begin{programcode}{}
+\begin{verbatim}
+class mock_A:
+    def return_A(self):
+        return "A"
+
+class A:
+    def __init__(self):
+        # assume we have some bad side effects here
+        pass
+
+    def return_A(self):
+        return "A"
+   
+class B:
+    def return_B(self):
+        return "B"
+
+def my_function(a, b):
+    return a.return_A() + b.return_B()
+
+# in tests.py
+def test_my_function_returns_A():
+    assert my_function(mock_A(), B()) == "AB"
+\end{verbatim}
+\end{programcode}
+
+Like this we no longer have to call the bad constructor of \code{A}, but we can use the mock instead. Now, the test doesn't test the functionality of \code{A} any longer. But this wasn't the idea of this test anyway. The idea was to test the interplay of \code{A} and \code{B} in the function \code{my\_function}. The class \code{A} will have to be dismanteled and tested independently.
+
+
+\subsection{Costructor with Side Effects}
 
 Let's say you have the following code with a counter implemented inside the constructor. This might have seemed like a reasonable thing to do, but now as you start writing unit tests, you realize that this has severe drawbacks.
 
@@ -925,6 +1013,50 @@ If you feel like testing a method which is private, just make it public. This is
 
 Once you made the method public, you can write unit tests for it. And when you have plenty of unit tests, you might be able to extract this method, maybe along with some other methods, into a new class or a set of freestanding functions. The fact that you wanted to test this method to begin with is a clear indication that it is too complicated and should be refactored. So, alltogether, refactoring this method into its own class is anyway a good idea.
 
+Once you have the method tested, use extract method to make the method a free standing function. If required, you can then incorporate the method into a new class.
+
+Let's make a small example. Assume that we have the class \code{A} with a private method \code{do\_something} that contains very complicated code and we're feeling a strong urge to test it.
+
+\begin{programcode}{}
+\begin{verbatim}
+class A{
+private:
+    int b = 1;
+    void do_something(){
+        // some very complicated code
+        std::cout << b << std::endl;
+    }
+public:
+    void do_something_public(){
+        do_something();
+    }
+};
+\end{verbatim}
+\end{programcode}
+
+The first step is very simple. We just make the method public.
+
+\begin{programcode}{}
+\begin{verbatim}
+class A{
+private:
+    int b = 1;
+public:
+    void do_something(){
+        // some very complicated code
+        std::cout << b << std::endl;
+    }
+    void do_something_public(){
+        do_something();
+    }
+};
+\end{verbatim}
+\end{programcode}
+
+The next step is to write a unit test for the method. This may be laborious, depending on the code. In case you face some difficulties, look up the techniques in the chapter "How Do I Test this Monstrosity" (p. \pageref{chap:how_do_i_test_this_monstrosity}).
+
+Once you have the tests in place, you can extract method (p. \pageref{sec:extract_method}) and make the method a free standing function. If required, you can then incorporate the method into a new class.
+
 \subsubsection*{Final}
 
 Making methods \code{final} or \code{sealed} is generally a good thing. In fact, this should be the standard and overriding functions should only be allowed if it is explicitly allowed. With that respect, many OO programming languages are flawed. There were times when it was considered good practice if a test case inherits from the class it is testing. But this is a really bad idea. This is similar to testing private (or protected) methods. You should always test the public interface of a class. Never the private methods. You should only test private methods if you are working with legacy code.
@@ -943,20 +1075,8 @@ Our goal is to wirte as many pure functions as possible and limit the side effec
 
 Now you might already see one problem with pure functions: methods are generally not pure functions. They frequently have side effects as they change the member variables of the class. This is the main reason why I don't like classes. Classes have hidden states and are therefore hard to understand and hard to test.
 
-\section{Not Instantiable Arguments}
 
-When working with legacy code, you may struggle to instantiate some objects that you need for your tests. This problem may show up regardless whether you work with functions, methods or classes. The reasons can be manifold but they are always a sign for bad code. As we learned, good code is easy to test. And if it's not easy to test, it is most likely bad. 
-
-The solution is always the same, regardless if you work with functions, methods or classes. You should use the dependency injector (p. \pageref{sec:dependency_injector}). This is the gold standard. The dependency injector allows you to fake or mock the object which is hard to instantiate or has side effects. You are not going to test these objects that are hard to instantiate anyway because you can't. You'd have to fix them, but that's another story. Instead you want to test the code that uses these objects. You want to test everything else.
-
-\begin{programcode}{}
-\begin{verbatim}
-def 
-
-\end{verbatim}
-\end{programcode}
-
-\chapter{I Need to Make a Change, What Methods Should I Test?}
+\section{What Methods Should I Test?}
 
 This is another difficult topic. As the code may have side effects and use global variables, in theory you have to check all the code that could be affected by the change. You'd have to test everything. In the extreme case you'd have to test almost the entire code base. For very bad code, this is indeed the only option you have: write integration tests that cover all the code but are slow and impresice. You won't get such a good feedback as you could when writing unit tests, but it's better than nothing.
 
@@ -1004,13 +1124,3 @@ def test_average_of_file():
 \end{verbatim}
 \end{programcode}
  
-\section{Lean on the Compiler}
-
-The compiler is such an ordinary tool that people might forget how useful it is. The compiler not only converts your source code into some form of binary, it also tells you if some part of the code doesn't work. This is very handy if you make some changes, like renaming a function, and you are not sure if they will work. In a compiled language you can make these changes nevertheless and just see if it still compiles. Of course, leaning on the compiler has some pitfalls that you have to be aware of. It is no panacea to make changes to your code. Afterall, it's not a refactoring tool.
-
-One example Michael Feathers gives is refactoring global variables. If you change a global variable, either by renaming it, or by puting it into a class, the compiler will produce errors wherever this variable was used. Now it's your task to fix these errors and you're probably done.
-
-However, there is one danger with leaning on the compiler: if you change an overriden method, the code will still compile because the compiler can use the base class method. Or you have different variables with the same name. This is very dangerous. For this reason, you should always first check, that the code really breaks when making a change. This is one of the reasons why I recommend not to use implementation inheretance at all. And you shouldn't redefine variables, this results in very brittle code and should be avoided. However, these are the things you have to look out for. 
-
-Now of course, you could also do some gloabal search and replace. But this is a very dangerous thing to do. You never know if you changed the variable in the right way.
-

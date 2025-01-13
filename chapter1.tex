@@ -1,28 +1,15 @@
-Legacy Code Made Easy
-
-Some definitions
-- seam
-- pinch point
-- etc.
-
-good code
-- no side effects
-- small classes
-- interfaces
-- small/no classes
-- simple constructors
 
 Foreword
 
 This book is based on Michael Feathers book "Working Effectively with Legacy Code" (WELC). It covers a very important topic: how to deal with old, badly structured, untested code. In short, legacy code. Legacy code is a very common problem. Even if you try to write good code to begin with, code tends to rot and becomes legacy code over time. This code is worth trillions and countless teams of software engineers have only one task: to keep this code alive at all costs.
 
-Many of the techniques explained in the afore mentioned book are still useful, but there are certainly some aspects that could be written differently nowadays. A common example is dependency injection (DI), which is now a very common technique to handle complexity. Feathers calls this "parametrize constructor" and in my opinion he doesn't give this technique enough credit. Furthermore, Feathers praises the advantages of object-oriented (OO) code, which in my opinion is somewhat misguided. As I explained in my book "Software Engineering Made Easy", procedural code can do anything that OO code can do as well, and in most cases it's even simpler.
+Many of the techniques explained in the afore mentioned book are still useful, but there are certainly some aspects that could be written differently nowadays. A common example is dependency injection (DI), which is now a very common technique to handle complexity. Feathers calls this "parametrize constructor" and in my opinion he doesn't give this technique enough credit. Furthermore, Feathers praises the advantages of object-oriented (OO) code and uses inheritance extensively, which in my opinion is somewhat misguided. As I explained in my book "Software Engineering Made Easy", procedural code can do anything that OO code can do as well, and in most cases it's even simpler. Furthermore, in my opinion you shouldn't use inheritance at all as it's very brittle. Many of the refatoring techniques are prone to error if there is inheritance involved.
 
 Another issue is that the book focuses too much on C++ and its particularities like preprocessor macros and linking of custom files. Now this is certainly a book about working with old code and such techniques therefore can be useful, but they shouldn't be first class citizens. Such techniques are desperate measures for special issues and should only be used when absolutely needed.
 
 It also has to be said that WELC nor this book contain solutions for all different kinds of problems. For some specific issues we can give you blueprints on how to solve them, but the main task still lies with the programmer, you.  
 
-As a summary, one can say that WELC stood the test of time, but it deserves a complete overhaul. I hope that this overhaul will be read for another twenty years as well.
+As a summary, one can say that WELC stood the test of time, but it deserves a complete overhaul and I decided to skim it down to the very basics. I hope that this overhaul will be read for another twenty years as well.
 
 Marco Gähler
 
@@ -38,7 +25,22 @@ Of course, this is a very pessimistic scenario. In most cases, at least some par
 
 \chapter{Testing}
 
-As we'll see many times throughout this book, having good test coverage with unit tests is paramount. The unit tests serve as a safety net when you perform changes to the code. Unit tests immediately give you feedback whether the code still works as expected. As long as the code you're working with is covered with tests, you can be fairly sure that you didn't break anything. Unit tests are no guarantee that everything still works, but they are by far the best safety net you can have.
+\textsl{"To me, legacy code is simply code without tests."}
+
+%\raggedleft{ -- Michael Feathers}
+
+\section{Unit Tests}
+
+As we'll see many times throughout this book, having good (automated) test coverage with unit tests is paramount. The unit tests serve as a safety net when you perform changes to the code. Unit tests immediately give you feedback whether the code still works as expected. As long as the code you're working with is covered with tests, you can be fairly sure that you didn't break anything. Unit tests are no guarantee that everything still works, but they are by far the best safety net you can have.
+
+Unit tests have three properties:
+\begin{itemize}
+    \item Unit tests are fast. One test should take only a few milliseconds.
+    \item Unit tests are deterministic. They should always return the same result.
+    \item Unit tests return only two possible results: pass or fail.
+\end{itemize}
+
+This implies that anything which communicates with the outside world, like reading a file, talking to a database or communicating over a network, should be abstracted away and not tested with unit tests. These things should be tested with integration tests, as explained in Software Engineering Made Easy\footnote{Software Engineering Made Easy, Marco Gähler}.
 
 Ultimately, unit tests are also just code. And as with normal code, there are some best practices that you should follow. When in doubt, follow the normal best practices for writing good code. Though there are some differences:
 \begin{itemize}
@@ -49,8 +51,23 @@ Ultimately, unit tests are also just code. And as with normal code, there are so
     \item Tests should be as independent of each other as possible. If some code breaks, only the corresponding test should fail. With unit tests, this is generally not a big deal, but once you write integration tests, you really have to make sure that each test is responsible for only one thing.
 \end{itemize}
 
+As a rule of thumb, one can say that unit tests can only be written for good code. Of course, there might be exceptions, but those are very rare. Vice versa, if you manage to write unit tests to your code, your code is quite certainly well written.
 
-\chapter{Problems of Code}
+For these reasons, one can say that unit tests are probably the single most important factor of writing good code. Not only because they facilitate refactoring, but also because they force you to write good code.
+
+Now I assume that you already know how to write unit tests and what they are generally about. So I'll refrain from writing an introduction on unit tests here. 
+
+\section{Test Dirven Development}\label{chap:tdd}
+
+Test Driven Development (TDD) is a very common technique to write good code. The idea is that you write the tests before you write the code. TDD forces you to write good code because you write the tests from a user perspective. Thus, you define how the code should look like if you had a choice. And it turns out that you always have a choice, you just didn't know so far.
+
+Now, I have to admit that doing TDD is something odd to start with. You should first get used to write proper unit tests before you start with TDD. Though once you got used to it, doing TDD feels actually quite natural. The most important thing is that you need to know what the code is supposed to do exactly. Which is anyway a prerequisite for writing good code.
+
+I highly recommend doing TDD once you are used to it. It certainly improves the quality of your code and there are no downsides to it.
+
+TODO Programming by Difference?
+
+\chapter{Problematic Code}
 
 The goal of this book is quite simple: explain to you how to make your existing code better. This requires two steps: you have to find out why your code is bad, and you need to have an idea how the code could look like instead. There are dedicated books on this topic and I highly recommend you'd read my book "Software Engineering Made Easy"\footnote{Software Engineering Make Easy, Marco Gähler} before you read this book. I will always give some explanations on the code examples here, on why they are bad and how it could be improved, but you should be able to judge these things by yourself. I'm only giving you a very short overview on the most important points.
 
@@ -185,164 +202,49 @@ When refactoring, it is important to have a vision how the code could look like.
 
 The great thing about scratch refactoring is that you can get a feel for the code without much effort. Where might the problems be? How should the fundamental data structure look like? How much effort may it be to do the refactoring? These is all crucial information that you like to have before starting a full-fledged refactoring where you first have to find interfaces, write tests, etc.
 
-\chapter{Components for Refactoring}
+\section{Components for Refactoring}
 
 Before we can get started with the actual contents of this book, we first have to introduces some terminology. Most of the terms were introduced by Michael Feathers.
 
 As we have already seen that by far the most difficult part of refactoring is writing unit tests. 
 
-\section{Vice}
+\subsection{Software Vise}
 
-A vice is a clamping device to hold physical objects in order to process them mechanically. What we need in refactoring is the same thing for software. We need to get a hold on a certain piece of code that we want to edit.
+A vise is a clamping device to hold physical objects in order to process them mechanically. What we need in refactoring is the same thing for software. We need to get a hold on a certain piece of code that we want to edit.
 
 In software development, every piece of code has two interfaces of interest. One for the input and one for the output. Everything in between should be fixed by the vice. The code inside the vice should be as small as possible in order to reduce the complexity that the vice needs to hold. Generally this complexity is limited by the interfaces available where you can write tests for. But it could also be that you have to skip a few interfaces as you have to refactor them as well. Though this happens rarely. In good code, the code is structured well enough such that you generally only have to touch the code within one pair of interfaces, meanwhile in bad code the interfaces are so far apparat that the closest pair of interfaces is completely sufficient.
 
-\section{Enabling point}
+\subsection{Enabling point}
 
 The enabling point is the input of the code under test. This can be a function call or the constructor of an object. It may also be required to perform several steps, akin to the setup of a unit test. In the enabling point, you can not only change the values of some operation. At times, you can also use dependency injection (DI) to polymorphically change the behavior of the entire code within the vice.
 
-\section{Sensing Point}
+\subsection{Sensing Point}
 
 The sensing point is at the output of the code in the vice. It is where you see the result of some operation. This can be used for the assertions of the unit tests that you are going to write.
 
-\section{Unit Tests}
-
-As already mentioned before, unit tests is an extremely important topic as it is the single most characteristics to determine whether a piece of code is well written or not. Unit tests have three properties:
-
-\begin{itemize}
-\item They give you a definite answer whether the code works
-\item They are fast
-\item They are easily understandable
-\end{itemize}
-
-Let me briefly elaborate on these points:
-
-First, unit tests never depend on any external factors like the file system or a network connection. These things could fail. Instead, you have to use for example dependency injection to hand over a fake or a mock. This may feel like cheating at first sight, but it is not. You don't want to test if the network is working, nor do you want to rely on a file that someone might have deleted. These things would only make the tests unreliable.
-
-Second, unit tests should only take a few milliseconds. You will be running hundreds if not thousands of unit tests all the time. And if this process takes more than a few seconds, it will be tedious. For this reason you should abstract everything away that is computationally expensive. This can generally be done using dependency injection (DI), along with faking and mocking.
-
-Third, unit tests have to be easily understandable. Setting up a unit test and checking its results should only take a few lines of code. If this becomes tedious, it is a clear indication that your code is flawed.
-
-As a rule of thumb, one can say that unit tests can only be written for good code. Of course, there might be exceptions, but those are very rare. Vice versa, if you manage to write unit tests to your code, your code is quite certainly well written.
-
-For these reasons, one can say that unit tests are probably the single most important factor of writing good code. Not only because they facilitate refactoring, but also because they force you to write good code.
-
-Now I assume that you already know how to write unit tests and what they are generally about. So I'll refrain from writing an introduction on unit tests here. 
-
-\section{Dependency Injection}\label{sec:dependency_injection}
-
-Dependency Injection (DI), by Michael Feathers referred to as "parametrizing constructor", is a very common and powerful technique to pass functionality down the call stack. DI is particularly important if you have some object that you can't write unit tests for. This can be either because executing some method of this object is slow or it might not be deterministic, like communicating over a network connection.
-
-Let's start with a small example. You have a file containing some numbers. You want to read this file and calculate the average of the numbers. The code could look like this:
-
-\begin{programcode}{}\label{prog:average_of_file}
-\begin{verbatim}
-def average_of_file(file):
-    with open(file, 'r') as f:
-        contents = f.read()
-    numbers = [int(x) for x in contents.split(',')]
-    return sum(numbers)/len(numbers)
-
-def test_read_file():
-    assert average_of_file('test.csv') == 3
-\end{verbatim} 
-\end{programcode}
-
-This code has two flaws. 
-
-The first one is that it is potentially comparing floating point numbers for equality. But we'll neglect this issue for the time being.
-
-The second flaw is that this isn't a unit test. It depends on the file system. This is bad because the file system is slow and it is not deterministic. The file might be deleted or the contents might change. This is why we have to use dependency injection. We have to pass the file contents to the function instead of reading it from the file system. Now the first step is that we have to take the code code appart. We split it into two functions, one function is responsible for calculating the average of the \code{numbers} and the other function is responsible for reading the file.
-
-\begin{programcode}{}
-\begin{verbatim}
-def average_of_file(contents):
-    numbers = [int(x) for x in contents.split(',')]
-    return sum(numbers)/len(numbers)
-
-def read_file():
-    with open(file, 'r') as f:
-        return f.read()
-
-def test_read_file():
-    assert average_of_file(read_file('test.csv')) == 3
-\end{verbatim}
-\end{programcode}
-
-Now we can easily write a test which does not depend on the actual file. All we have to do is replacing the \code{read\_file} function with a mock that returns some random values.
-
-\begin{programcode}{}
-\begin{verbatim}
-def average_of_file(contents):
-    numbers = [int(x) for x in contents.split(',')]
-    return sum(numbers)/len(numbers)
-
-def read_mock(_):
-    return '1,2,3,4,5'
-
-def test_read_file():
-    assert average_of_file(read_mock('test.csv')) == 3
-\end{verbatim}
-\end{programcode}
-
-This is the basic idea of DI. But it's not yet the complete implementation. The \code{read\_mock} function may be burried within the code and it may be difficult to replace it. This is why we have to use a more sophisticated technique. We have to pass the function as an argument to \code{average\_of\_file}. This code looks as follows:
-
-\begin{programcode}{}
-\begin{verbatim}
-def average_of_file(reader, file_name):
-    numbers = file_reader(file_name)
-    return sum(numbers)/len(numbers)
-
-def mock_reader(_):
-    return '1,2,3,4,5'
-
-def file_reader(file_name):
-    with open(file_name, 'r') as f:
-        return f.read()
-
-def test_read_file():
-    assert average_of_file(mock_reader, 'test.csv') == 3
-\end{verbatim}
-\end{programcode}
-
-We pass the code to read the file as a function argument to \code{average\_of\_file}. This is the basic idea of DI. You encapsulate the functionality into a function or a class and pass it on through the call stack. This way you can easily replace the functionality with a mock or a fake.
-
-Note that DI is not limited to object-oriented (OO) code. You can also use it in procedural code as shown in the example above. The only requirement is that the programming language supports passing functions as arguments, which pretty much all programming langages do. For this reason, I won't make any difference between OO and procedural code in this book. The fundamental techniques required to refactor the code are exactly the same. In fact, writing OO code has its own set of problems. You have to deal with inheritance and classes which are too long, which can make the code even more complicated. We'll spend a fair amount of this book on problems that are specific to OO code.
-
-Note that there are also mocking libraries avaiable to change the behavior of some functions being executed in your tests. Please don't use these libraries. They are a clear sign that your code is flawed. Use DI instead. It's really not that hard to pass a function as an argument to another function. Even if DI is currently not implemented in the code so far, adding it is usually not that hard.
-
-\section{Fakes and Mocks}
-
-As we have just seen, DI comes along with the usage of fakes and mocks. They both have in common that they replace functionality with some artificial result. The general idea behind fakes and mocks is that you want to replace some slow or unreliable functionality with a fast and deterministic object as it is required for unit tests.
-
-Fakes and mocks are very similar as they have both the same goal. They are tools to replace some hard to test functionality with some artificial result.
-
-Mocking is generally the easier thing to do. You just replace the object with a function that returns some predefined values as we have seen above. There's really not that much more left to explain.
-
-Faking on the other hand can be much more difficult. In faking you replace a hard to test object with some artificial object that imitates at least some parts of the original object. A common example is creating a fake database or a file system. You implement a piece of code supporting a \code{read} and \code{write} function. The \code{write} function doesn't actually write to the DB or the file system. Instead, is just stores the corresponding values in the memory. Vice versa, when calling the \code{read} function, it doesn't actually read from the DB or the file system, but it returns the values stored in the memory. Like this you can mimic the behavior of the DB or the file system and write unit tests for your code.
-
-\begin{programcode}{}
-\begin{verbatim}
-class FakeDB:
-    def __init__(self):
-        self.data = {}
-
-    def write(self, key, value):
-        self.data[key] = value
-
-    def read(self, key):
-        return self.data[key]
-\end{verbatim}
-\end{programcode}
 
 
-In general I recommend writing mocks because they are so much simpler than fakes. If you really need a full fledged fake, chances are that your code is flawed.
 
 \section{Tools}
 
 Michael Feathers had high hopes that there would be some refactoring tools being developed over the curse of the years. Unfortunately, this didn't happen. There are some tools available, but they are generally not very useful. The most common tool is the search and replace functionality of your IDE. This tool can rename variables, extract functions, etc. However, it is not possible to do more fundamental changes to your code with automated tools. One of the reasons are certainly misguided constructs like global variables, inheritance, etc. All the things which make the code so hard to refactor in the first place. You never know if there is a global variable nor how it might affect the functionality of the code. Probably writing a tool fails for the very same reason: it cannot guarantee that the code still works after the refactoring.
 
 One question is of course whether the AI tools will be able to do refactoring, though I guess this is still a long way to go. AI tools are simply not there yet and I don't know how an AI tool should be able to detect side effects of a function and learn how to deal with them.
+
+\subsection{Test Coverage Tools}
+
+Test coverage tools are certainly not the perfect tool for improving your code quality, but they can be useful nevertheless. Test coverage tools can be used to see if all branches of the code are covered by tests. This gives you a good indication how many tests you should write. However, even 100\% test coverage is no guarantee that the code is correct. There are always places where bugs can hide. One example is a function that was called with the wrong number of arguments. And even with "good" test coverage, such a bug can still hide.
+
+\subsection{Compiler}
+
+Possibly one of the most important tools is the compiler. The compiler not only converts the code into some form of binary, it also gives us valueable information if something is wrong. This can be very helpful if you do some refactoring. Let's say you add another argument to a function. If you forget to update all the function calls, you'll get a compiler error. To novice programmers, this may seem like a nuisance. But in fact, it is a very helpful tool that points out your mistakes. Furthermore you should also use the warnings of the compiler. The warnings are there for a reason and I encountered several compiler warnings that prevented me from making a mistake. For this reason, I recommend to always compile your code with the highest warning level and to treat all warnings as errors. However, if you work with legacy code, this may not always be possible as you would get hundreds of errors. In this case, you should at least treat all new warnings as errors.
+
+\subsection{Interpreted Languages}
+
+Interpreted languages at times seem like a bliss. No more compilation times! Something people 20 years ago could only dream of. But as I already mentioned, a compiler can be extremely handy as it can warn you if you might make a mistake. This is a serious drawback of interpreted languages. Of course, you can use a linter to check your code.
+
+Interpreted languages have some other drawbacks as well. While you don't have to specify the types of the variables, you are also missing this important piece of information. And the time you gain by not having to compile the code, you lose by having to run the comparably slow unit tests. So in the end, I'm not sure if using interpreted languages is such a good idea. But this is a topic for another book.
+
 
 \chapter{Adding Functionality}
 
@@ -528,6 +430,8 @@ What we just did here is also known as the Interface Segragation Princeple (ISP)
 
 \section{Breaking Dependencies}
 
+TODO should we split this up by the chapters?
+
 TODO See p. 325-400
 
 Here are some techniques to break dependencies that I have from the book "Working Effectively with Legacy Code" by Michael Feathers. The techniques are generally quite simple and the danger of introducing bugs is fairly low if applied correctly. However, there is always some risk involved, so you shouldn't apply these techniques lightly. For this reason I always explain the main difficulties of every technique.
@@ -605,17 +509,118 @@ The new function may have quite a lot of arguments. This should be refactored by
 
 Extract Method is a fairly simple technique. You mainly have to pay attention that you don't mix up the function arguments. The old method probably had some arguments, plus all the member variables of the class that it used. So there may be quite a lot of arguments all together. In compiled languages you have the advantage that the compiler can warn you if you forgot some arguments or you mixed up the order. Especially if you work with default arguments, you have to be careful that you don't mix anything up.
 
+\subsection{Extract Interface}
 
 
-\chapter{Test Dirven Development}\label{chap:tdd}
+\section{Dependency Injection}\label{sec:dependency_injection}
 
-Test Driven Development (TDD) is a very common technique to write good code. The idea is that you write the tests before you write the code. TDD forces you to write good code because you write the tests from a user perspective. Thus, you define how the code should look like if you had a choice. And it turns out that you always have a choice, you just didn't know so far.
+Dependency Injection (DI), by Michael Feathers referred to as "parametrizing constructor", is a very common and powerful technique to pass functionality down the call stack. DI is particularly important if you have some object that you can't write unit tests for. This can be either because executing some method of this object is slow or it might not be deterministic, like communicating over a network connection.
 
-Now, I have to admit that doing TDD is something odd to start with. You should first get used to write proper unit tests before you start with TDD. Though once you got used to it, doing TDD feels actually quite natural. The most important thing is that you need to know what the code is supposed to do exactly. Which is anyway a prerequisite for writing good code.
+Let's start with a small example. You have a file containing some numbers. You want to read this file and calculate the average of the numbers. The code could look like this:
 
-I highly recommend doing TDD once you are used to it. It certainly improves the quality of your code and there are no downsides to it.
+\begin{programcode}{}\label{prog:average_of_file}
+\begin{verbatim}
+def average_of_file(file):
+    with open(file, 'r') as f:
+        contents = f.read()
+    numbers = [int(x) for x in contents.split(',')]
+    return sum(numbers)/len(numbers)
 
-TODO Programming by Difference?
+def test_read_file():
+    assert average_of_file('test.csv') == 3
+\end{verbatim} 
+\end{programcode}
+
+This code has two flaws. 
+
+The first one is that it is potentially comparing floating point numbers for equality. But we'll neglect this issue for the time being.
+
+The second flaw is that this isn't a unit test. It depends on the file system. This is bad because the file system is slow and it is not deterministic. The file might be deleted or the contents might change. This is why we have to use dependency injection. We have to pass the file contents to the function instead of reading it from the file system. Now the first step is that we have to take the code code appart. We split it into two functions, one function is responsible for calculating the average of the \code{numbers} and the other function is responsible for reading the file.
+
+\begin{programcode}{}
+\begin{verbatim}
+def average_of_file(contents):
+    numbers = [int(x) for x in contents.split(',')]
+    return sum(numbers)/len(numbers)
+
+def read_file():
+    with open(file, 'r') as f:
+        return f.read()
+
+def test_read_file():
+    assert average_of_file(read_file('test.csv')) == 3
+\end{verbatim}
+\end{programcode}
+
+Now we can easily write a test which does not depend on the actual file. All we have to do is replacing the \code{read\_file} function with a mock that returns some random values.
+
+\begin{programcode}{}
+\begin{verbatim}
+def average_of_file(contents):
+    numbers = [int(x) for x in contents.split(',')]
+    return sum(numbers)/len(numbers)
+
+def read_mock(_):
+    return '1,2,3,4,5'
+
+def test_read_file():
+    assert average_of_file(read_mock('test.csv')) == 3
+\end{verbatim}
+\end{programcode}
+
+This is the basic idea of DI. But it's not yet the complete implementation. The \code{read\_mock} function may be burried within the code and it may be difficult to replace it. This is why we have to use a more sophisticated technique. We have to pass the function as an argument to \code{average\_of\_file}. This code looks as follows:
+
+\begin{programcode}{}
+\begin{verbatim}
+def average_of_file(reader, file_name):
+    numbers = file_reader(file_name)
+    return sum(numbers)/len(numbers)
+
+def mock_reader(_):
+    return '1,2,3,4,5'
+
+def file_reader(file_name):
+    with open(file_name, 'r') as f:
+        return f.read()
+
+def test_read_file():
+    assert average_of_file(mock_reader, 'test.csv') == 3
+\end{verbatim}
+\end{programcode}
+
+We pass the code to read the file as a function argument to \code{average\_of\_file}. This is the basic idea of DI. You encapsulate the functionality into a function or a class and pass it on through the call stack. This way you can easily replace the functionality with a mock or a fake.
+
+Note that DI is not limited to object-oriented (OO) code. You can also use it in procedural code as shown in the example above. The only requirement is that the programming language supports passing functions as arguments, which pretty much all programming langages do. For this reason, I won't make any difference between OO and procedural code in this book. The fundamental techniques required to refactor the code are exactly the same. In fact, writing OO code has its own set of problems. You have to deal with inheritance and classes which are too long, which can make the code even more complicated. We'll spend a fair amount of this book on problems that are specific to OO code.
+
+Note that there are also mocking libraries avaiable to change the behavior of some functions being executed in your tests. Please don't use these libraries. They are a clear sign that your code is flawed. Use DI instead. It's really not that hard to pass a function as an argument to another function. Even if DI is currently not implemented in the code so far, adding it is usually not that hard.
+
+\section{Fakes and Mocks}
+
+As we have just seen, DI comes along with the usage of fakes and mocks. They both have in common that they replace functionality with some artificial result. The general idea behind fakes and mocks is that you want to replace some slow or unreliable functionality with a fast and deterministic object as it is required for unit tests.
+
+Fakes and mocks are very similar as they have both the same goal. They are tools to replace some hard to test functionality with some artificial result.
+
+Mocking is generally the easier thing to do. You just replace the object with a function that returns some predefined values as we have seen above. There's really not that much more left to explain.
+
+Faking on the other hand can be much more difficult. In faking you replace a hard to test object with some artificial object that imitates at least some parts of the original object. A common example is creating a fake database or a file system. You implement a piece of code supporting a \code{read} and \code{write} function. The \code{write} function doesn't actually write to the DB or the file system. Instead, is just stores the corresponding values in the memory. Vice versa, when calling the \code{read} function, it doesn't actually read from the DB or the file system, but it returns the values stored in the memory. Like this you can mimic the behavior of the DB or the file system and write unit tests for your code.
+
+\begin{programcode}{}
+\begin{verbatim}
+class FakeDB:
+    def __init__(self):
+        self.data = {}
+
+    def write(self, key, value):
+        self.data[key] = value
+
+    def read(self, key):
+        return self.data[key]
+\end{verbatim}
+\end{programcode}
+
+
+In general I recommend writing mocks because they are so much simpler than fakes. You only need fakes if you really want to simulate some physical device.
+
 
 \chapter{How Do I Test this Monstrosity}
 
@@ -646,13 +651,13 @@ However, if your test somehow miraculously passes, you have to make sure that it
 
 If you are programming in a compiled language, you have to make sure that all the objects instantiated support the corresponding functions. If you don't know what value you should instantiate these objects with, try something like \code{Null}, \code{nullptr} or similar, depending on the programming language you work with.
 
-\section{The Dependency Injectior}
+\section{The Dependency Injectior}\label{sec:dependency_injector}
 
 Once the test runs, you have to make sure that it fulfills the criteria of a unit test. This means that the test has to be fast and deterministic. It shouldn't depend on things like a network connection, a database or the file system. These things all have to be faked or mocked away.
 
 As we have already seen, DI is the remedy of choice for such issues. And there is absolutely nothing wrong about implementing DI in your code. In fact, it is quite simple. In interpreted languages it is very simple to get it running, though it is hard to get it right. In compiled languages it takes somewhat more efforts because you have to implement an interface for the existing code. And if you can't replace the existing code, you'll have to write a wrapper around it. This is a bit more work, but it is still feasible. 
 
-On the other hand, compiled languages have the advantage that the compiler can warn you if you are doing something wrong. The most common issue of the dependency injector being that you forget to adapt all the function calls to the new signature. In interpreted languages you need either some good test coverage or you have to be careful when making the change. Where having to be careful is certainly a bad thing because things can go wrong. And things will go wrong.
+On the other hand, compiled languages have the advantage that the compiler can warn you if you are doing something wrong. The most common issue of the dependency injector being that you forget to adapt all the function calls to the new signature. Though in most languages, you can use default arguments to avoid this issue.
 
 \subsection{Interpreted Languages}
 
@@ -679,13 +684,17 @@ def read_file(file_name):
     with open(file_name, 'r') as f:
         return f.read()
 
-def average_of_file(reader, file_name):
+def fake_file(_):
+    return '1,2,3,4,5'
+
+def average_of_file(file_name, reader=read_file):
     contets = reader(file_name)
     numbers = [int(x) for x in contents.split(',')]
     return sum(numbers)/len(numbers)
 
 if __name__ == '__main__':
     print(average_of_file('test.csv'))
+    print(average_of_file('not_existing.txt', fake_file))
 \end{verbatim}
 \end{programcode}
 
@@ -751,7 +760,7 @@ public:
 
 class FakeFileReader : public FileReader{
 public:
-    string print_lines(const string& file_name) override {
+    string print_lines(const string&) override {
         cout << "line 1" << endl;
         cout << "line 2" << endl;
     }
@@ -852,7 +861,7 @@ This is of course the gold standard. If you can get rid of the side effects in t
 
 This is generally already more feasible than removing the side effects completely. If you undo them in the Destructor, you destroy the object and the side effects are gone. This works at times. For example if you open a file inside the constructor, you may want to close it in the destructor. Though, of course, this doesn't always work. The idea of the counter mentioned above is to keep the state.
 
-\subsection{Undo the Sige Effects in a Separate Function}
+\subsection{Undo the Side Effects in a Separate Function}
 
 Now here things get a little ugly. If the solutions mentioned above don't work, you'll have to take some desperate measures. You have to introduce code that is only dedicated for testing purposes. This is a very bad sign. You should never have to write production code for testing purposes. This is the tail wagging the dog. This is a desperate measure that you should avoid at all costs. But you work with legacy code and sometimes there is no other way to get the code under test. So let's see how this code could look like.
 
@@ -900,7 +909,7 @@ As I said, this is an ugly hack. But it's the only solution that I know.
 
 TODO: reread the chapter on testing classes and see if there is something that can be added here.
 
-\chapter{I Can't Test this Method}
+\section{I Can't Test this Method}
 
 Similar to clases, there can be problems if you want to test a method or function:
 
@@ -910,19 +919,19 @@ Similar to clases, there can be problems if you want to test a method or functio
 \item You don't know how to instantiate the arguments
 \end{itemize}
 
-\section{The Method is Private}
+\subsection{The Method is Private}
 
 If you feel like testing a method which is private, just make it public. This is certainly not recommended for good code, but here we are dealing with legacy code. And getting the method under test is more important.
 
 Once you made the method public, you can write unit tests for it. And when you have plenty of unit tests, you might be able to extract this method, maybe along with some other methods, into a new class or a set of freestanding functions. The fact that you wanted to test this method to begin with is a clear indication that it is too complicated and should be refactored. So, alltogether, refactoring this method into its own class is anyway a good idea.
 
-\subsection{Final}
+\subsubsection*{Final}
 
 Making methods \code{final} or \code{sealed} is generally a good thing. In fact, this should be the standard and overriding functions should only be allowed if it is explicitly allowed. With that respect, many OO programming languages are flawed. There were times when it was considered good practice if a test case inherits from the class it is testing. But this is a really bad idea. This is similar to testing private (or protected) methods. You should always test the public interface of a class. Never the private methods. You should only test private methods if you are working with legacy code.
 
 In my opinion you should never write tests that inherit from the class under test. The worst thing you have to do is making private methods public and then refactor the code once it's tested.
 
-\subsection{The Method has Side Effects}
+\subsubsection*{The Method has Side Effects}
 
 First, let's think about good code. In good code, all the changes that a method or function makes are immediately visible to the outside. These functions only depend on the function arguments and the only thing they do is calculating the return value. They are called pure functions and are the gold standard of good code. In fact, functional programming is all about writing pure functions.
 
@@ -934,9 +943,18 @@ Our goal is to wirte as many pure functions as possible and limit the side effec
 
 Now you might already see one problem with pure functions: methods are generally not pure functions. They frequently have side effects as they change the member variables of the class. This is the main reason why I don't like classes. Classes have hidden states and are therefore hard to understand and hard to test.
 
-\section{You Don't Know How to Instantiate the Arguments}
+\section{Not Instantiable Arguments}
 
-This problem may show up regardless whether you work with functions, methods or classes. 
+When working with legacy code, you may struggle to instantiate some objects that you need for your tests. This problem may show up regardless whether you work with functions, methods or classes. The reasons can be manifold but they are always a sign for bad code. As we learned, good code is easy to test. And if it's not easy to test, it is most likely bad. 
+
+The solution is always the same, regardless if you work with functions, methods or classes. You should use the dependency injector (p. \pageref{sec:dependency_injector}). This is the gold standard. The dependency injector allows you to fake or mock the object which is hard to instantiate or has side effects. You are not going to test these objects that are hard to instantiate anyway because you can't. You'd have to fix them, but that's another story. Instead you want to test the code that uses these objects. You want to test everything else.
+
+\begin{programcode}{}
+\begin{verbatim}
+def 
+
+\end{verbatim}
+\end{programcode}
 
 \chapter{I Need to Make a Change, What Methods Should I Test?}
 
@@ -985,7 +1003,7 @@ def test_average_of_file():
     assert average_of_file(mock_reader, 'test.csv') == 3
 \end{verbatim}
 \end{programcode}
-
+ 
 \section{Lean on the Compiler}
 
 The compiler is such an ordinary tool that people might forget how useful it is. The compiler not only converts your source code into some form of binary, it also tells you if some part of the code doesn't work. This is very handy if you make some changes, like renaming a function, and you are not sure if they will work. In a compiled language you can make these changes nevertheless and just see if it still compiles. Of course, leaning on the compiler has some pitfalls that you have to be aware of. It is no panacea to make changes to your code. Afterall, it's not a refactoring tool.

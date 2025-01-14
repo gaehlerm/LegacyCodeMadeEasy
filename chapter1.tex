@@ -3,7 +3,9 @@ Foreword
 
 This book is based on Michael Feathers book "Working Effectively with Legacy Code" (WELC). It covers a very important topic: how to deal with old, badly structured, untested code. In short, legacy code. Legacy code is a very common problem. Even if you try to write good code to begin with, code tends to rot and becomes legacy code over time. This code is worth trillions and countless teams of software engineers have only one task: to keep this code alive at all costs.
 
-Many of the techniques explained in the afore mentioned book are still useful, but there are certainly some aspects that could be written differently nowadays. A common example is dependency injection (DI), which is now a very common technique to handle complexity. Feathers calls this "parametrize constructor" and in my opinion he doesn't give this technique enough credit. Furthermore, Feathers praises the advantages of object-oriented (OO) code and uses inheritance extensively, which in my opinion is somewhat misguided. As I explained in my book "Software Engineering Made Easy", procedural code can do anything that OO code can do as well, and in most cases it's even simpler. Furthermore, in my opinion you shouldn't use inheritance at all as it's very brittle. Many of the refatoring techniques are prone to error if there is inheritance involved.
+Many of the techniques explained in the afore mentioned book are still useful, but there are certainly some aspects that could be written differently. At times it took me too long to understand certain explanations. A common example is dependency injection (DI), which is now a very common technique to handle complexity. Feathers calls this "parametrize constructor" and in my opinion he doesn't give this technique enough credit. Furthermore, Feathers praises the advantages of object-oriented (OO) code and uses inheritance extensively, which in my opinion is somewhat misguided. Even if he gives some explanation under which conditions inheritance should be used, I think it's easier not to use inheritance at all. Inheritance is brittle and brittle code is bad by definition. In my opinion, even the use of classes should be reduced to a minimum. As I explained in my book "Software Engineering Made Easy", procedural code can do anything that OO code can do as well, and in most cases it's even simpler. 
+
+Now I will use classes and in some cases even inheritance for explaining the concepts. You are working with legacy code afterall and you can't expect your code to become perfect overnight. You have to take small steps that improve your code and if using inheritance is the easiest way to do so, then go ahead. But if you have a choice, I recommend using other techniques that don't involve inheritance.
 
 Another issue is that the book focuses too much on C++ and its particularities like preprocessor macros and linking of custom files. Now this is certainly a book about working with old code and such techniques therefore can be useful, but they shouldn't be first class citizens. Such techniques are desperate measures for special issues and should only be used when absolutely needed.
 
@@ -29,9 +31,11 @@ Of course, this is a very pessimistic scenario. In most cases, at least some par
 
 %\raggedleft{ -- Michael Feathers}
 
-\section{Unit Tests}
+\section{Unit Tests}\label{chap:unittests}
 
-As we'll see many times throughout this book, having good (automated) test coverage with unit tests is paramount. The unit tests serve as a safety net when you perform changes to the code. Unit tests immediately give you feedback whether the code still works as expected. As long as the code you're working with is covered with tests, you can be fairly sure that you didn't break anything. Unit tests can never guarantee that everything still works, but they are by far the best safety net available in software engineering.
+If you never wrote any unit tests, you should probably learn it with my other book "Software Engineering Made Easy". I will only give a very short introduction here on the most relevant aspects for this book.
+
+As we'll see many times throughout this book, having good (automated) test coverage with unit tests is paramount. The unit tests serve as a safety net when you perform changes to the code. Unit tests immediately give you feedback whether the code still works as expected. As long as the code you're working with is covered with tests, you can be fairly sure that you didn't break anything. Unit tests can never guarantee that everything works. Edsger Dijkstra tried to make proofs that code works exactly as specified 70 years ago and he failed terribly. Nevertheless, unit tests are by far the best safety net available in software engineering and certainly worth the effort.
 
 Unit tests have three properties:
 \begin{itemize}
@@ -40,7 +44,7 @@ Unit tests have three properties:
     \item Unit tests return only two possible results: pass or fail.
 \end{itemize}
 
-This implies that anything which communicates with the outside world, like reading a file, talking to a database or communicating over a network, should be abstracted away and not tested with unit tests. These things should be tested with integration tests, as explained in Software Engineering Made Easy\footnote{Software Engineering Made Easy, Marco Gähler}.
+This implies that anything which communicates with the outside world, like reading a file, talking to a database or communicating over a network, should be abstracted away and not tested with unit tests. Connections and access to the filesystem should be tested with integration tests, as explained in Software Engineering Made Easy\footnote{Software Engineering Made Easy, Marco Gähler}.
 
 Ultimately, unit tests are also just code. And as with normal code, there are some best practices that you should follow. When in doubt, follow the normal best practices for writing good code. Though there are some differences:
 \begin{itemize}
@@ -59,7 +63,7 @@ Now I assume that you already know how to write unit tests and what they are gen
 
 \section{Test Dirven Development}\label{chap:tdd}
 
-Test Driven Development (TDD) is a very common technique to write good code. The idea is that you write the tests before you write the code. TDD forces you to write good code because you write the tests from a user perspective. Thus, you define how the code should look like if you had a choice. And it turns out that you always have a choice, you just didn't know so far.
+Test Driven Development (TDD) is a very common technique to write good code. The idea is that you write the tests before you write the code. TDD forces you to write good code because you write the tests from a user perspective. Thus, you define how the interface of the code should look like if you had a choice. And it turns out that you always have a choice, you just didn't know so far.
 
 Now, I have to admit that doing TDD is something odd to start with. You should first get used to write proper unit tests before you start with TDD. Though once you got used to it, doing TDD feels actually quite natural. The most important thing is that you need to know what the code is supposed to do exactly. Which is anyway a prerequisite for writing good code.
 
@@ -93,17 +97,168 @@ There are several indicator whether a function or a class is well written. The s
 
 Another good rule is the Single Responsibility Principle (SRP), which states that every object should do exactly one thing. 
 
+Let me give you a short example. We start with a class \code{car} which has too many responsibilities.
+
+\begin{programcode}{}\label{prog:car}
+\begin{verbatim}
+class Car:
+    def __init__(self):
+        self.speed = 0
+        self.ENGINE_MAX_SPEED = 200
+        self.rpm = 0
+
+        
+    def accelerate(self, speed_difference):
+        if self.speed + speed_difference > \
+                self.ENGINE_MAX_SPEED:
+            raise Exception("Speed too high")
+        self.speed += speed_difference
+        self.rpm += 20*speed_difference
+
+my_car = Car()
+my_car.accelerate(50)
+\end{verbatim}
+\end{programcode}
+
+Now the class isn't huge. But it is too big nevertheless because it has two responsibilities. It is a car, but it also takes care of the engine properties within this class. This is bad as it violates one of the most fundamental principles of software engineering: the Single Responsibility Principle. The class should be split into two classes: one for the car and one for the engine, where the car contains the engine as a member variable.
+
+\begin{tcolorbox}
+\textbf{The Single Responsibility Principle (SRP)}:
+
+Every object does exactly one thing. Everything is done by exactly one object.
+\end{tcolorbox}
+
+The desired code looks like this:
+
+\begin{programcode}{}
+\begin{verbatim}
+class Engine:
+    def __init__(self):
+        self.rpm = 0
+        self.ENGINE_MAX_SPEED = 200
+
+    def accelerate(self, speed_difference):
+        self.rpm += 20*speed_difference
+
+class Car:
+    def __init__(self):
+        self.speed = 0
+        self.engine = Engine()
+        
+    def accelerate(self, speed_difference):
+        if self.speed + speed_difference > \
+                self.engine.ENGINE_MAX_SPEED:
+            raise Exception("Speed too high")
+        self.speed += speed_difference
+        self.engine.accelerate(speed_difference)
+\end{verbatim}
+\end{programcode}
+
+Now you might ask yourself: What is the point? Wasn't the original class just fine? Of course, it wasn't too bad. But this was only because I have to create simlpe examples in this book as you wouldn't understand them otherwise. Classes have the tendency to grow over time and if you don't split them into smaller classes, they will become unreadable. This is a very common problem in software development and you should always be on the lookout for classes that are too big and split them into smaller classes.
+
 \section{Too Many Levels of Indentation}
+
+"If you need more than 3 levels of indentation, you’re screwed anyway, and should fix your program." - Linus Torvalds
 
 Nested code is a direct consequence of having complicated logic with many if statements or loops. Now I hope you already see the problem: code should never by complicated. So we have a direct proof that nested code is bad.
 
 As a rule of thumb, one can say that good code contains few if statements because good code is easy to understand. If statements on the other hand are a very common source of bugs because they are so easy to confuse. Instead of using if statements, one can use for example polymorphism or at times you can also restructure your code in order to get rid of if statements.
 
+Here is an example with too many levels of indentation:
+
+\begin{programcode}{}
+\begin{verbatim}
+def foo(x, y, z):
+    if x < 5:
+        if y < 10:
+            if z < 15:
+                print("Hello World")
+\end{verbatim}
+\end{programcode}
+
+Now, once again, this is of course a very artificial example. It's very easy to understand, so you might ask yourself: "What's the problem?" Now the problem is that in a lot of legacy code, you have many levels of indetation with very complicated logic. This will be almost impossible to understand. And as you are reading this book, I'm quite certain you have already seen such code.
+
+Now it's much better to simplify the logic if possible or at least use early returns. This is a very common technique to reduce the levels of indentation. Here is the same code with early returns:
+
+\begin{programcode}{}
+\begin{verbatim}
+def foo(x, y, z):
+    if x >= 5:
+        return
+    if y >= 10:
+        return
+    if z >= 15:
+        return
+    print("Hello World")
+\end{verbatim}
+\end{programcode}
+
+Now the number of levels of indentation is reduced to 2 and we fulfill Linus Torvalds' rule of thumb. This code is easier to understand and therefore better.
+
 \section{No Unit Tests}
 
-Usually, no unit tests is one criterion to rule them all. If you have good test coverage, you usually also have reasonably good code. As we have seen on p. ?, having unit tests means that you have good class design. This rule also holds for the other points in our list. If you have unit tests, you inevitably have also some interfaces that you used for writing the tests with. So one can say that having unit tests is a very strong indication that your code is fine.
+Usually, no unit tests is one criterion to rule them all. If you have good test coverage, you usually also have reasonably good code. As we have seen on p. \pageref{chap:unittests}, having unit tests means that you have good class design. This rule also holds for the other points in our list. If you have unit tests, you inevitably have also some interfaces that you used for writing the tests with. So one can say that having unit tests is a very strong indication that your code is fine.
 
 Now in theory, you could also write pristine code without having unit tests, but this is extremely difficult to achieve. The danger of writing way huge classes and otherwise convoluted code is just too big and unit tests are generally the only thing to keep your programming style within boundaries.
+
+Unit tests have the advantage that they force you to write small classes with well defined interfaces and code without side effects. As we have seen in the original example code on the car on p. \pageref{prog:car}, the code was quite fine, but it was still better to split it into two classes
+
+TODO I have to fix this code here
+\begin{programcode}{}
+\begin{verbatim}
+class Engine:
+    def __init__(self):
+        self.rpm = 0
+        self.ENGINE_MAX_SPEED = 200
+
+    def accelerate(self, speed_difference):
+        if self.rpm + speed_difference*20 > \
+                self.engine.ENGINE_MAX_SPEED:
+            raise Exception("Speed too high")
+        self.rpm += 20*speed_difference
+
+class Car:
+    def __init__(self):
+        self.speed = 0
+        self.engine = Engine()
+        
+    def accelerate(self, speed_difference):
+        
+        self.speed += speed_difference
+        self.engine.accelerate(speed_difference)
+\end{verbatim}
+\end{programcode}
+
+The unit tests for this code will look as follows:
+
+\begin{programcode}{}
+\begin{verbatim}
+def test_car_accelerate():
+    car = Car()
+    car.accelerate(50)
+    assert car.speed == 50
+    assert car.engine.rpm == 1000
+
+def test_car_accelerate_too_fast():
+    car = Car()
+    with pytest.raises(Exception):
+        car.accelerate(300)
+
+def test_engine_accelerate():
+    engine = Engine()
+    engine.accelerate(50)
+    assert engine.rpm == 1000
+
+def test_engine_accelerate_too_fast():
+    engine = Engine()
+    with pytest.raises(Exception):
+        engine.accelerate(300)
+\end{verbatim}
+\end{programcode}
+
+Now, as I said, you could also write such code without having to refactor the original \code{car} class. But as the class tends to grow over time, it would become more and more difficult to write tests for it.
+
+If you already have unit tests on the other hand, you can be quite certain that your code is fine. Chances are that your class design is much better and with good test coverage, breaking up the \code{car} class into sub classes is less dangerous because you have a safety net.
 
 \section{Comments}
 
@@ -111,17 +266,126 @@ Code should be self documenting. The syntax explains to you exactly what the cod
 
 However, comments can explain things that code cannot explain. Code cannot explain, why something is the way it is. In a comment you can add a ticket number and then everyone can look up and reason for himself, why the code has to look the way it does.
 
-\section{No Interfaces or Global Variables}
+\begin{programcode}{}
+\begin{verbatim}
+def foo(x, y):
+    # This function adds two numbers
+    return x + y
+\end{verbatim}
+\end{programcode}
+
+There are people who think that this comment is justified. I don't think so. In my opinion it is a sign for bad code. Just name the function properly and you'll know what it does without the need for a comment.
+
+\begin{programcode}{}
+\begin{verbatim}
+def add(x, y):
+    return x + y
+\end{verbatim}
+\end{programcode}
+    
+Comments should be used sparingly. They should never explain what the code does as good code is self explanatory. Just add a one-liner function with an appropriate name and you'll understand what that line does.
+
+Comments should only explain why something is done. Usually you should add a ticket number to the comment for that purpose.
+
+\begin{programcode}{}
+\begin{verbatim}
+# if it's a lemon, make lemonade
+if fruit.is_sour() and fruit.is_yellow():
+    make_lemonade(fruit)
+\end{verbatim}
+\end{programcode}
+
+This is one example where you can replace the comment with a function to make the code self explanatory.
+
+\begin{programcode}{}
+\begin{verbatim}
+def is_lemon(fruit):
+    return fruit.is_sour() and fruit.is_yellow()
+
+if is_lemon(fruit):
+    make_lemonade(fruit)
+\end{verbatim}
+\end{programcode}
+
+\section{No Interfaces}
 
 The optimal case is a function whose output only depends on its function arguments. It has no internal state, it reads no file and it doesn't talk to the database. This is called a pure function and is the standard in functional programming. Pure functions are great. They are very easy to test as you know what they depend on. The output will always be the same and if you write a unit test for such a function, it will never fail. It has a well defined interface.
 
+Now, there is something very counter intuitive about interfaces. You are supposed to make interfaces small and the easiest way to do this is by making the methods and variables of a class private. But this is bad because you cannot test the class anymore properly. Instead you have to break the class into smaller classes and test these classes individually.
+
+TODO: find a good example that we can break into pieces
+\begin{programcode}{}
+\begin{verbatim}
+class Car:
+    def __init__(self):
+        self._speed = 0
+        self._MAX_SPEED = 200
+        self._tires = [Tire() for _ in range(4)]
+        self._engine = Engine()
+
+\end{verbatim}    
+\end{programcode}
+
+\section{Global Variables}
+
 Now the complete opposite are class methods or functions with global variables. These objects are extremely hard to comprehend because they depend on hidden states. Just think about it: do you prefer a function with 3 arguments, or a function with no arguments, but 3 global variables that it depends on? I hope you prefer the function with 3 arguments because it's explicit. You see immediately what the function depends on and it is therefore much simpler to write a test for it. This function has a well defined interface. Meanwhile the interface of the function using 3 global variables is very blurry. You don't really know what that function depends on and therefore it's extremely difficult to work with such a function.
+
+Let's compare the following two functions:
+
+\begin{programcode}{}
+\begin{verbatim}
+# version 1
+def add(x, y):
+    return x + y
+
+print(add(1, 2))
+
+#version 2
+x = 1
+y = 2
+
+def add():
+    return x + y
+
+print(add())
+\end{verbatim}
+\end{programcode}
+
+The two versions of the \code{add} function do exactly the same thing and the result is the same. Yet there is a huge difference in the readability of the functions. The first version is much easier to understand because you see immediately what the function depends on. Meanwhile the second version depends on global variables that you have no idea where they come from nor what value they might have.
+
+Of course, having too many funciton arguments is bad. But using global variables doesn't make it any better. This is just a hack that makes your code much harder to understand.
 
 \section{Too Many Arguments}
 
 This problem is generally less severe than the other points discussed in this chapter. Still, you should keep the number of arguments used by a function or method at a minimum. Robert C. Martin is quite strict about this point and recommends to use at most 3 arguments. I completely agree with him that having at most 3 function arguments is optimal, however at times it takes too much effort to keep it that way. You frequently add functionality to a function later on, which comes along with a new function argument. Now, this is a sign that the function is not designed anymore properly, but on the other hand, you don't always have time to write pristine code.
 
 Having too many arguments in your functions is a sign that you haven't structured your data properly. Think about all the different tools a plumber uses. But he has them neatly sorted in his toolbox. You have to do the same: sort your variables.
+
+Let's take a very simple function with way too many arguments:
+
+\begin{programcode}{}
+\begin{verbatim}
+def add(x, y, z, a, b, c):
+    return [x+a, y+b, z+c]
+\end{verbatim}
+\end{programcode}
+
+Now there is already some structure. We do have one set of variables starting with \code{x} and the other set starting with \code{a}. This is an indication that we can group the variables into two data classes (a struct in C++).
+
+\begin{programcode}{}
+\begin{verbatim}
+class Vector:
+    def __init__(self, x, y, z):
+        self.x = x
+        self.y = y
+        self.z = z
+
+def add(v1, v2):
+    return Vector(v1.x + v2.x, v1.y + v2.y, v1.z + v2.z)
+\end{verbatim}
+\end{programcode}
+
+Now we have reduced the number of function arguments from 6 to a much more managable 2. This makes the code much easier to understand and less brittle. In the first version of the code, there was a high chance that you mixed up the variables.
 
 \section{Redefined Variables}
 
@@ -594,7 +858,7 @@ def test_read_file():
 
 This is the basic idea of DI. But it's not yet the complete implementation. The \code{read\_mock} function may be burried within the code and it may be difficult to replace it. This is why we have to use a more sophisticated technique. We have to pass the function as an argument to \code{average\_of\_file}. This code looks as follows:
 
-\begin{programcode}{}
+\begin{programcode}{}\label{prog:mock_reader}
 \begin{verbatim}
 def average_of_file(reader, file_name):
     numbers = file_reader(file_name)
@@ -1074,6 +1338,28 @@ But you can limit these side effects to a minimum. Robert C. Martin calls this a
 Our goal is to wirte as many pure functions as possible and limit the side effects to a minimum. This makes the code easier to test and easier to understand.
 
 Now you might already see one problem with pure functions: methods are generally not pure functions. They frequently have side effects as they change the member variables of the class. This is the main reason why I don't like classes. Classes have hidden states and are therefore hard to understand and hard to test.
+
+A common example is the following code that we've already seen on p. \pageref{prog:average_of_file}.
+
+\begin{programcode}{}\label{prog:mock_reader}
+\begin{verbatim}
+def average_of_file(reader, file_name):
+    numbers = file_reader(file_name)
+    return sum(numbers)/len(numbers)
+
+def mock_reader(_):
+    return '1,2,3,4,5'
+
+def file_reader(file_name):
+    with open(file_name, 'r') as f:
+        return f.read()
+
+def test_read_file():
+    assert average_of_file(mock_reader, 'test.csv') == 3
+\end{verbatim}
+\end{programcode}
+
+Here the function \code{file\_reader} has a side effect. It reads from the file system. This is what Robert C. Martin called a humble object. We stirpped down this function to the bare minimum and made it as simple as possible. We will not be able to write a unit test for this function, but it is so simple that it shouldn't be necessary. For the unit tests we can use a mock function that returns some predefined values.
 
 
 \section{What Methods Should I Test?}
